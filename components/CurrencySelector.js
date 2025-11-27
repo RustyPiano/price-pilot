@@ -15,16 +15,23 @@ export default function CurrencySelector({ onCurrencyChange, defaultCurrency = '
     };
 
     return (
-        <select
-            value={selectedCurrency}
-            onChange={handleSelect}
-            className="px-3 py-1.5 bg-gray-100 border-0 rounded-lg text-sm font-medium text-gray-700 focus:ring-2 focus:ring-blue-500 cursor-pointer"
-        >
-            {currencies.map((currency) => (
-                <option key={currency.code} value={currency.code}>
-                    {currency.code}
-                </option>
-            ))}
-        </select>
+        <div className="relative">
+            <select
+                value={selectedCurrency}
+                onChange={handleSelect}
+                className="appearance-none pl-4 pr-10 py-2 bg-white border-3 border-black rounded-none text-sm font-black text-black focus:shadow-neo cursor-pointer outline-none transition-all hover:-translate-y-0.5 hover:shadow-neo-sm"
+            >
+                {currencies.map((currency) => (
+                    <option key={currency.code} value={currency.code}>
+                        {currency.code}
+                    </option>
+                ))}
+            </select>
+            <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-black">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M19 9l-7 7-7-7" />
+                </svg>
+            </div>
+        </div>
     );
 }

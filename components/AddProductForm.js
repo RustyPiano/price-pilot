@@ -19,7 +19,7 @@ export default function AddProductForm({ onAddProduct, unitSystem, defaultCurren
 
     const handleSubmit = (e) => {
         e.preventDefault();
-        
+
         if (!formData.name.trim() || !formData.price || !formData.quantity || !formData.unit) {
             toast.error('请填写完整信息');
             return;
@@ -27,7 +27,7 @@ export default function AddProductForm({ onAddProduct, unitSystem, defaultCurren
 
         const price = parseFloat(formData.price);
         const quantity = parseFloat(formData.quantity);
-        
+
         if (price <= 0 || quantity <= 0) {
             toast.error('价格和数量必须大于0');
             return;
@@ -40,7 +40,7 @@ export default function AddProductForm({ onAddProduct, unitSystem, defaultCurren
             quantity,
             timestamp: new Date().toISOString()
         });
-        
+
         // 重置表单，保留单位和货币
         setFormData(prev => ({
             name: '',
@@ -58,69 +58,88 @@ export default function AddProductForm({ onAddProduct, unitSystem, defaultCurren
     };
 
     return (
-        <form onSubmit={handleSubmit} className="space-y-3">
+        <form onSubmit={handleSubmit} className="space-y-5">
             {/* 商品名称 */}
-            <input
-                ref={nameRef}
-                type="text"
-                name="name"
-                value={formData.name}
-                onChange={handleChange}
-                className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
-                placeholder="商品名称"
-            />
-
-            {/* 价格和数量行 */}
-            <div className="grid grid-cols-2 gap-3">
-                <div className="relative">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">
-                        {currencies[formData.currency]}
-                    </span>
-                    <input
-                        type="number"
-                        name="price"
-                        value={formData.price}
-                        onChange={handleChange}
-                        className="w-full pl-7 pr-3 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
-                        placeholder="价格"
-                        step="0.01"
-                        min="0"
-                    />
-                </div>
+            <div>
+                <label className="block text-sm font-bold text-black mb-2 uppercase tracking-wide">Product Name</label>
                 <input
-                    type="number"
-                    name="quantity"
-                    value={formData.quantity}
+                    ref={nameRef}
+                    type="text"
+                    name="name"
+                    value={formData.name}
                     onChange={handleChange}
-                    className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
-                    placeholder="数量"
-                    step="any"
-                    min="0"
+                    className="w-full px-4 py-3 bg-white border-3 border-black rounded-none focus:shadow-neo transition-all text-base font-medium outline-none placeholder-gray-400"
+                    placeholder="e.g. Cola 500ml"
                 />
             </div>
 
+            {/* 价格和数量行 */}
+            <div className="grid grid-cols-2 gap-5">
+                <div>
+                    <label className="block text-sm font-bold text-black mb-2 uppercase tracking-wide">Price</label>
+                    <div className="relative">
+                        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-black font-bold text-lg">
+                            {currencies[formData.currency]}
+                        </span>
+                        <input
+                            type="number"
+                            name="price"
+                            value={formData.price}
+                            onChange={handleChange}
+                            className="w-full pl-10 pr-4 py-3 bg-white border-3 border-black rounded-none focus:shadow-neo transition-all text-base font-bold outline-none placeholder-gray-400"
+                            placeholder="0.00"
+                            step="0.01"
+                            min="0"
+                        />
+                    </div>
+                </div>
+                <div>
+                    <label className="block text-sm font-bold text-black mb-2 uppercase tracking-wide">Qty</label>
+                    <input
+                        type="number"
+                        name="quantity"
+                        value={formData.quantity}
+                        onChange={handleChange}
+                        className="w-full px-4 py-3 bg-white border-3 border-black rounded-none focus:shadow-neo transition-all text-base font-bold outline-none placeholder-gray-400"
+                        placeholder="0"
+                        step="any"
+                        min="0"
+                    />
+                </div>
+            </div>
+
             {/* 单位选择 */}
-            <div className="flex gap-3">
-                <select
-                    name="unit"
-                    value={formData.unit}
-                    onChange={handleChange}
-                    className="flex-1 px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
-                >
-                    {Object.entries(unitSystem).map(([type, info]) => (
-                        <optgroup key={type} label={info.displayName}>
-                            {Object.entries(info.conversions).map(([code, unit]) => (
-                                <option key={code} value={code}>{unit.displayName}</option>
+            <div>
+                <label className="block text-sm font-bold text-black mb-2 uppercase tracking-wide">Unit</label>
+                <div className="flex gap-4">
+                    <div className="relative flex-1">
+                        <select
+                            name="unit"
+                            value={formData.unit}
+                            onChange={handleChange}
+                            className="w-full appearance-none px-4 py-3 bg-white border-3 border-black rounded-none focus:shadow-neo transition-all text-base font-bold outline-none cursor-pointer"
+                        >
+                            {Object.entries(unitSystem).map(([type, info]) => (
+                                <optgroup key={type} label={info.displayName}>
+                                    {Object.entries(info.conversions).map(([code, unit]) => (
+                                        <option key={code} value={code}>{unit.displayName}</option>
+                                    ))}
+                                </optgroup>
                             ))}
-                        </optgroup>
-                    ))}
-                </select>
-                <button
-                    type="submit"
-                    className="px-6 py-2.5 bg-blue-500 text-white font-medium rounded-lg hover:bg-blue-600 active:scale-95 transition-all text-sm"
-                >
-                    添加
-                </button>
+                        </select>
+                        <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-black">
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M19 9l-7 7-7-7" />
+                            </svg>
+                        </div>
+                    </div>
+                    <button
+                        type="submit"
+                        className="px-8 py-3 bg-primary-400 border-3 border-black text-black font-black uppercase tracking-wider rounded-none hover:-translate-y-1 hover:shadow-neo active:translate-x-0 active:translate-y-0 active:shadow-none transition-all"
+                    >
+                        ADD
+                    </button>
+                </div>
             </div>
         </form>
     );

@@ -2,14 +2,60 @@
 @tailwind components;
 @tailwind utilities;
 
-html {
-  scroll-behavior: smooth;
-  -webkit-tap-highlight-color: transparent;
+:root {
+  --background: #fdfbf7;
+  /* Off-white/Paper */
+  --foreground: #18181b;
+  /* Zinc 900 */
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    /* Neobrutalism usually avoids dark mode or uses high contrast dark */
+    --background: #18181b;
+    --foreground: #fdfbf7;
+  }
 }
 
 body {
+  color: var(--foreground);
+  background: var(--background);
+  font-family: 'Space Grotesk', 'Inter', sans-serif;
+  /* Ideally would load a font */
   -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Neobrutalism Utilities */
+.neo-card {
+  background: white;
+  border: 3px solid #18181b;
+  box-shadow: 4px 4px 0 0 #18181b;
+  border-radius: 0.5rem;
+}
+
+.neo-btn {
+  border: 3px solid #18181b;
+  box-shadow: 2px 2px 0 0 #18181b;
+  font-weight: 700;
+  transition: all 0.1s;
+}
+
+.neo-btn:active {
+  transform: translate(2px, 2px);
+  box-shadow: 0 0 0 0 #18181b;
+}
+
+.neo-input {
+  border: 3px solid #18181b;
+  border-radius: 0.5rem;
+  padding: 0.75rem;
+  font-weight: 500;
+  outline: none;
+  transition: box-shadow 0.1s;
+}
+
+.neo-input:focus {
+  box-shadow: 4px 4px 0 0 #18181b;
 }
 
 /* 移除 number input 的 spinner */
@@ -18,25 +64,7 @@ input[type="number"]::-webkit-outer-spin-button {
   -webkit-appearance: none;
   margin: 0;
 }
+
 input[type="number"] {
   -moz-appearance: textfield;
-}
-
-/* 简单动画 */
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(-8px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-.animate-fadeIn {
-  animation: fadeIn 0.2s ease-out;
-}
-
-/* 按钮点击效果 */
-.active\:scale-95:active {
-  transform: scale(0.95);
-}
-
-.active\:scale-98:active {
-  transform: scale(0.98);
 }

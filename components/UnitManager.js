@@ -9,7 +9,7 @@ export default function UnitManager({ unitSystem, onUpdateUnits }) {
 
     const handleAddUnit = (e) => {
         e.preventDefault();
-        
+
         if (!newUnit.code || !newUnit.displayName || !newUnit.rate) {
             toast.error('请填写完整信息');
             return;
@@ -49,25 +49,27 @@ export default function UnitManager({ unitSystem, onUpdateUnits }) {
     };
 
     return (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
-            <div className="flex justify-between items-center mb-4">
-                <h2 className="font-medium text-gray-800">单位管理</h2>
-                <button onClick={resetToDefault} className="text-xs text-gray-400 hover:text-red-500">
-                    重置
+        <div className="bg-white border-3 border-black shadow-neo p-6">
+            <div className="flex justify-between items-center mb-6">
+                <h2 className="font-black text-xl text-black uppercase">Unit Manager</h2>
+                <button
+                    onClick={resetToDefault}
+                    className="text-sm font-bold text-black hover:text-accent-500 hover:underline decoration-3 underline-offset-4 transition-colors"
+                >
+                    RESET DEFAULT
                 </button>
             </div>
 
             {/* 单位类型标签 */}
-            <div className="flex gap-2 mb-4 overflow-x-auto pb-2">
+            <div className="flex gap-3 mb-6 overflow-x-auto pb-2 scrollbar-hide">
                 {Object.entries(unitSystem).map(([type, info]) => (
                     <button
                         key={type}
                         onClick={() => setSelectedType(type)}
-                        className={`px-3 py-1.5 rounded-lg text-sm whitespace-nowrap transition-colors ${
-                            selectedType === type
-                                ? 'bg-blue-100 text-blue-600 font-medium'
-                                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                        }`}
+                        className={`px-4 py-2 border-3 border-black font-bold uppercase transition-all ${selectedType === type
+                                ? 'bg-secondary-400 text-black shadow-none translate-x-[2px] translate-y-[2px]'
+                                : 'bg-white text-black shadow-neo-sm hover:-translate-y-0.5 hover:shadow-neo'
+                            }`}
                     >
                         {info.displayName}
                     </button>
@@ -75,22 +77,22 @@ export default function UnitManager({ unitSystem, onUpdateUnits }) {
             </div>
 
             {/* 单位列表 */}
-            <div className="space-y-2 mb-4">
+            <div className="space-y-3 mb-6">
                 {Object.entries(unitSystem[selectedType].conversions).map(([code, unit]) => (
-                    <div key={code} className="flex items-center justify-between p-2 bg-gray-50 rounded-lg">
+                    <div key={code} className="flex items-center justify-between p-4 bg-white border-3 border-black shadow-neo-sm">
                         <div>
-                            <span className="font-medium text-gray-700">{unit.displayName}</span>
-                            <span className="text-xs text-gray-400 ml-2">
+                            <span className="font-black text-lg text-black mr-2">{unit.displayName}</span>
+                            <span className="text-sm font-bold bg-black text-white px-2 py-0.5 font-mono">
                                 {code} = {unit.rate} {unitSystem[selectedType].baseUnit}
                             </span>
                         </div>
                         {code !== unitSystem[selectedType].baseUnit && (
                             <button
                                 onClick={() => handleDeleteUnit(code)}
-                                className="p-1 text-gray-300 hover:text-red-500"
+                                className="p-1.5 border-3 border-black bg-white hover:bg-accent-500 hover:text-white transition-colors shadow-neo-sm active:translate-x-[2px] active:translate-y-[2px] active:shadow-none"
                             >
                                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M6 18L18 6M6 6l12 12" />
                                 </svg>
                             </button>
                         )}
@@ -102,42 +104,49 @@ export default function UnitManager({ unitSystem, onUpdateUnits }) {
             {!showAddUnit ? (
                 <button
                     onClick={() => setShowAddUnit(true)}
-                    className="w-full py-2 border-2 border-dashed border-gray-200 rounded-lg text-gray-400 hover:border-blue-300 hover:text-blue-500 transition-colors text-sm"
+                    className="w-full py-3 border-3 border-dashed border-black text-black font-black uppercase hover:bg-primary-50 transition-all hover:border-solid"
                 >
-                    + 添加单位
+                    + Add New Unit
                 </button>
             ) : (
-                <form onSubmit={handleAddUnit} className="space-y-3 p-3 bg-gray-50 rounded-lg">
-                    <div className="grid grid-cols-3 gap-2">
+                <form onSubmit={handleAddUnit} className="space-y-4 p-4 border-3 border-black bg-surface-100">
+                    <div className="grid grid-cols-3 gap-4">
                         <input
                             type="text"
                             value={newUnit.code}
                             onChange={(e) => setNewUnit({ ...newUnit, code: e.target.value })}
-                            className="px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm"
-                            placeholder="代码"
+                            className="px-3 py-2 bg-white border-3 border-black font-bold outline-none focus:shadow-neo transition-all"
+                            placeholder="Code (kg)"
                         />
                         <input
                             type="text"
                             value={newUnit.displayName}
                             onChange={(e) => setNewUnit({ ...newUnit, displayName: e.target.value })}
-                            className="px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm"
-                            placeholder="名称"
+                            className="px-3 py-2 bg-white border-3 border-black font-bold outline-none focus:shadow-neo transition-all"
+                            placeholder="Name (Kilogram)"
                         />
                         <input
                             type="number"
                             step="any"
                             value={newUnit.rate}
                             onChange={(e) => setNewUnit({ ...newUnit, rate: e.target.value })}
-                            className="px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm"
-                            placeholder="转换率"
+                            className="px-3 py-2 bg-white border-3 border-black font-bold outline-none focus:shadow-neo transition-all"
+                            placeholder="Rate (1000)"
                         />
                     </div>
-                    <div className="flex gap-2">
-                        <button type="button" onClick={() => setShowAddUnit(false)} className="flex-1 py-2 text-gray-500 text-sm">
-                            取消
+                    <div className="flex gap-4">
+                        <button
+                            type="button"
+                            onClick={() => setShowAddUnit(false)}
+                            className="flex-1 py-2 border-3 border-black bg-white font-bold uppercase hover:bg-gray-100 transition-colors"
+                        >
+                            Cancel
                         </button>
-                        <button type="submit" className="flex-1 py-2 bg-blue-500 text-white rounded-lg text-sm">
-                            添加
+                        <button
+                            type="submit"
+                            className="flex-1 py-2 bg-black text-white border-3 border-black font-bold uppercase hover:bg-gray-800 transition-colors shadow-neo-sm active:translate-x-[2px] active:translate-y-[2px] active:shadow-none"
+                        >
+                            Add Unit
                         </button>
                     </div>
                 </form>

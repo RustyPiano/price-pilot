@@ -53,65 +53,66 @@ export default function ProductList({ products, baseCurrency, onRemoveProduct, u
     const formatPrice = (price) => new Intl.NumberFormat('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(price);
 
     const getBadgeColor = (index) => {
-        if (index === 0) return 'bg-green-500 text-white';
-        if (index === sortedProducts.length - 1 && sortedProducts.length > 1) return 'bg-red-100 text-red-600';
-        return 'bg-gray-100 text-gray-600';
+        if (index === 0) return 'bg-primary-400 text-black border-3 border-black';
+        if (index === sortedProducts.length - 1 && sortedProducts.length > 1) return 'bg-accent-500 text-white border-3 border-black';
+        return 'bg-white text-black border-3 border-black';
     };
 
     if (isLoading) {
         return (
-            <div className="text-center py-8 text-gray-400 text-sm">
-                加载中...
+            <div className="text-center py-12 text-black font-bold animate-pulse">
+                LOADING RATES...
             </div>
         );
     }
 
     if (sortedProducts.length === 0) {
         return (
-            <div className="text-center py-8">
-                <div className="text-gray-300 text-4xl mb-2">📦</div>
-                <p className="text-gray-400 text-sm">添加商品开始对比</p>
+            <div className="text-center py-12">
+                <div className="text-6xl mb-4 grayscale opacity-50">🛒</div>
+                <p className="text-black font-bold uppercase tracking-wide">Add items to compare</p>
             </div>
         );
     }
 
     return (
-        <div className="space-y-2">
+        <div className="space-y-4">
             {sortedProducts.map((product, index) => (
                 <div
                     key={product.originalIndex}
-                    className={`flex items-center justify-between p-3 rounded-lg transition-all ${
-                        index === 0 ? 'bg-green-50 border border-green-200' : 'bg-gray-50 hover:bg-gray-100'
-                    }`}
+                    className={`flex items-center justify-between p-4 border-3 border-black transition-all duration-200 ${index === 0
+                            ? 'bg-secondary-100 shadow-neo hover:-translate-y-1 hover:shadow-neo-lg'
+                            : 'bg-white hover:shadow-neo hover:-translate-y-1'
+                        }`}
                 >
-                    <div className="flex items-center gap-3 min-w-0 flex-1">
+                    <div className="flex items-center gap-4 min-w-0 flex-1">
                         {/* 排名徽章 */}
-                        <span className={`flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium ${getBadgeColor(index)}`}>
-                            {index + 1}
+                        <span className={`flex-shrink-0 w-10 h-10 flex items-center justify-center text-lg font-black shadow-neo-sm ${getBadgeColor(index)}`}>
+                            #{index + 1}
                         </span>
-                        
+
                         <div className="min-w-0 flex-1">
                             <div className="flex items-center gap-2">
-                                <span className="font-medium text-gray-800 truncate">{product.name}</span>
+                                <span className="font-black text-lg text-black truncate uppercase">{product.name}</span>
                                 {index === 0 && (
-                                    <span className="flex-shrink-0 text-xs bg-green-500 text-white px-1.5 py-0.5 rounded">
-                                        最划算
+                                    <span className="flex-shrink-0 text-xs font-black bg-primary-400 text-black px-2 py-1 border-2 border-black uppercase shadow-neo-sm">
+                                        Best Deal
                                     </span>
                                 )}
                             </div>
-                            <div className="text-xs text-gray-400 mt-0.5">
+                            <div className="text-sm text-gray-600 mt-1 font-bold font-mono">
                                 {product.price} {product.currency} / {product.quantity}{product.unit}
                             </div>
                         </div>
                     </div>
 
-                    <div className="flex items-center gap-3 flex-shrink-0">
+                    <div className="flex items-center gap-4 flex-shrink-0">
                         {/* 单价 */}
                         <div className="text-right">
-                            <div className={`font-bold ${index === 0 ? 'text-green-600' : 'text-gray-700'}`}>
+                            <div className={`font-black text-xl ${index === 0 ? 'text-black' : 'text-gray-800'}`}>
                                 {formatPrice(product.unitPrice)}
                             </div>
-                            <div className="text-xs text-gray-400">
+                            <div className="text-xs text-gray-500 font-bold uppercase">
                                 /{product.baseUnit}
                             </div>
                         </div>
@@ -119,10 +120,10 @@ export default function ProductList({ products, baseCurrency, onRemoveProduct, u
                         {/* 删除按钮 */}
                         <button
                             onClick={() => onRemoveProduct(product.originalIndex)}
-                            className="p-1.5 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                            className="p-2 border-3 border-black bg-white hover:bg-accent-500 hover:text-white transition-colors shadow-neo-sm active:translate-x-[2px] active:translate-y-[2px] active:shadow-none"
                         >
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M6 18L18 6M6 6l12 12" />
                             </svg>
                         </button>
                     </div>
@@ -131,8 +132,10 @@ export default function ProductList({ products, baseCurrency, onRemoveProduct, u
 
             {/* 价格差异提示 */}
             {sortedProducts.length >= 2 && (
-                <div className="text-center text-xs text-gray-400 pt-2">
-                    最高比最低贵 {((sortedProducts[sortedProducts.length - 1].unitPrice / sortedProducts[0].unitPrice - 1) * 100).toFixed(0)}%
+                <div className="mt-6 p-4 bg-white border-3 border-black shadow-neo text-center">
+                    <p className="text-sm font-bold text-black uppercase">
+                        Price Difference: <span className="text-accent-500 font-black text-lg ml-1">{((sortedProducts[sortedProducts.length - 1].unitPrice / sortedProducts[0].unitPrice - 1) * 100).toFixed(0)}%</span>
+                    </p>
                 </div>
             )}
         </div>
