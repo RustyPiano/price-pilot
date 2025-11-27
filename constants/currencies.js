@@ -1,31 +1,37 @@
-// 所有支持的货币列表
-export const currencies = [
-  { code: 'CNY', name: '人民币', symbol: '¥' },
-  { code: 'USD', name: '美元', symbol: '$' },
-  { code: 'EUR', name: '欧元', symbol: '€' },
-  { code: 'JPY', name: '日元', symbol: '¥' },
-  { code: 'GBP', name: '英镑', symbol: '£' },
-  { code: 'AUD', name: '澳元', symbol: 'A$' },
-  { code: 'CAD', name: '加元', symbol: 'C$' },
-  { code: 'CHF', name: '瑞士法郎', symbol: 'Fr' },
-  { code: 'HKD', name: '港币', symbol: 'HK$' },
-  { code: 'NZD', name: '新西兰元', symbol: 'NZ$' },
-  { code: 'SGD', name: '新加坡元', symbol: 'S$' },
-  // ... 更多货币
-];
+import { translations } from './translations';
 
-// 获取汇率的API函数
+// Get currency list with localized names
+export function getCurrencies(locale = 'zh') {
+  const currencyTranslations = translations[locale]?.currencies || translations.zh.currencies;
+
+  return [
+    { code: 'CNY', name: currencyTranslations.CNY, symbol: '¥' },
+    { code: 'USD', name: currencyTranslations.USD, symbol: '$' },
+    { code: 'EUR', name: currencyTranslations.EUR, symbol: '€' },
+    { code: 'JPY', name: currencyTranslations.JPY, symbol: '¥' },
+    { code: 'GBP', name: currencyTranslations.GBP, symbol: '£' },
+    { code: 'AUD', name: currencyTranslations.AUD, symbol: 'A$' },
+    { code: 'CAD', name: currencyTranslations.CAD, symbol: 'C$' },
+    { code: 'CHF', name: currencyTranslations.CHF, symbol: 'Fr' },
+    { code: 'HKD', name: currencyTranslations.HKD, symbol: 'HK$' },
+    { code: 'NZD', name: currencyTranslations.NZD, symbol: 'NZ$' },
+    { code: 'SGD', name: currencyTranslations.SGD, symbol: 'S$' },
+  ];
+}
+
+// For backward compatibility - default export with Chinese names
+export const currencies = getCurrencies('zh');
+
+// Fetch exchange rates from API
 export async function fetchExchangeRates(baseCurrency = 'CNY') {
   try {
-    // 这里使用 ExchangeRate-API 的免费API
-    // 你需要注册获取API密钥: https://www.exchangerate-api.com/
     const response = await fetch(
       `https://v6.exchangerate-api.com/v6/a6463d646a0ef912f23ef813/latest/${baseCurrency}`
     );
     const data = await response.json();
     return data.conversion_rates;
   } catch (error) {
-    console.error('获取汇率失败:', error);
+    console.error('Failed to fetch exchange rates:', error);
     return null;
   }
 } 

@@ -6,16 +6,22 @@ import CurrencySelector from '../components/CurrencySelector';
 import ProductList from '../components/ProductList';
 import UnitManager from '../components/UnitManager';
 import UnitConverter from '../components/UnitConverter';
+import ThemeToggle from '../components/ThemeToggle';
+import LanguageToggle from '../components/LanguageToggle';
 import { defaultUnitSystem } from '../constants/unitSystem';
+import { useTheme } from '../context/ThemeContext';
+import { useLanguage } from '../context/LanguageContext';
+import { ArrowLeftRight, Settings, BarChart3, Plus, Trash2 } from 'lucide-react';
 
 export default function Home() {
   const [products, setProducts] = useState([]);
   const [baseCurrency, setBaseCurrency] = useState('CNY');
   const [unitSystem, setUnitSystem] = useState(defaultUnitSystem);
-  const [activePanel, setActivePanel] = useState(null); // 'unit-manager' | 'converter' | null
+  const [activePanel, setActivePanel] = useState(null);
   const formRef = useRef(null);
+  const { theme } = useTheme();
+  const { t } = useLanguage();
 
-  // 从 localStorage 加载数据
   useEffect(() => {
     const savedProducts = localStorage.getItem('products');
     const savedUnitSystem = localStorage.getItem('unitSystem');
@@ -26,7 +32,6 @@ export default function Home() {
     if (savedCurrency) setBaseCurrency(savedCurrency);
   }, []);
 
-  // 保存数据到 localStorage
   useEffect(() => {
     localStorage.setItem('products', JSON.stringify(products));
     localStorage.setItem('unitSystem', JSON.stringify(unitSystem));
@@ -35,7 +40,7 @@ export default function Home() {
 
   const handleAddProduct = (product) => {
     setProducts([...products, product]);
-    toast.success('添加成功！');
+    toast.success(t('addedSuccess'));
   };
 
   const handleRemoveProduct = (index) => {
@@ -49,22 +54,22 @@ export default function Home() {
   const handleUpdateUnits = (updatedSystem) => {
     setUnitSystem(updatedSystem);
     localStorage.setItem('unitSystem', JSON.stringify(updatedSystem));
-    toast.success('单位已更新');
+    toast.success(t('unitsUpdated'));
   };
 
   const handleClearAll = () => {
     if (products.length === 0) return;
-    if (confirm('确定清空所有商品吗？')) {
+    if (confirm(t('confirmClear'))) {
       setProducts([]);
-      toast.success('已清空');
+      toast.success(t('clearedSuccess'));
     }
   };
 
   return (
     <>
       <Head>
-        <title>Price Pilot - 单价对比</title>
-        <meta name="description" content="快速对比商品单价" />
+        <title>{t('appTitle')}</title>
+        <meta name="description" content={t('metaDescription')} />
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
         <link rel="icon" href="/favicon.ico" />
       </Head>
@@ -74,75 +79,70 @@ export default function Home() {
         toastOptions={{
           duration: 2000,
           style: {
-            background: '#fff',
-            color: '#000',
-            border: '3px solid #000',
-            boxShadow: '4px 4px 0 0 #000',
-            fontWeight: 'bold',
-            borderRadius: '0'
+            background: 'var(--bg-surface)',
+            color: 'var(--fg-primary)',
+            border: 'var(--border-width) solid var(--border-color)',
+            boxShadow: 'var(--shadow-base)',
+            fontWeight: '500',
+            borderRadius: 'var(--border-radius)'
           },
         }}
       />
 
-      <div className="min-h-screen bg-surface-100 pb-24 font-sans">
-        {/* 顶部栏 */}
-        <header className="bg-primary-400 border-b-3 border-black sticky top-0 z-50">
-          <div className="max-w-2xl mx-auto px-4 h-16 flex items-center justify-between">
+      <div className="min-h-screen bg-surface-100 pb-24 font-sans transition-colors duration-300">
+        <header className="bg-primary border-b-theme sticky top-0 z-50 transition-colors duration-300">
+          <div className="max-w-2xl mx-auto px-4 h-14 flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <div className="w-10 h-10 bg-white border-3 border-black flex items-center justify-center text-black font-black text-xl shadow-neo-sm">
+              <div className="w-9 h-9 bg-surface border-theme flex items-center justify-center text-foreground font-bold text-lg shadow-theme-sm rounded-theme">
                 P
               </div>
-              <h1 className="text-xl font-black text-black tracking-tight uppercase">Price Pilot</h1>
+              <h1 className="text-lg font-bold text-foreground tracking-tight">{t('appTitle')}</h1>
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
+              <LanguageToggle />
+              <ThemeToggle />
               <button
                 onClick={() => setActivePanel(activePanel === 'converter' ? null : 'converter')}
-                className={`p-2 border-3 border-black transition-all duration-100 ${activePanel === 'converter'
-                    ? 'bg-secondary-400 text-black shadow-none translate-x-[2px] translate-y-[2px]'
-                    : 'bg-white text-black shadow-neo-sm hover:-translate-y-0.5 hover:shadow-neo'
+                className={`w-9 h-9 flex items-center justify-center border-theme transition-all duration-100 rounded-theme ${activePanel === 'converter'
+                  ? 'bg-secondary text-foreground shadow-none translate-x-[2px] translate-y-[2px]'
+                  : 'bg-surface text-foreground shadow-theme-sm hover:-translate-y-0.5 hover:shadow-theme-base'
                   }`}
-                title="单位转换"
+                title={t('unitConverter')}
               >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
-                </svg>
+                <ArrowLeftRight className="w-4 h-4" />
               </button>
               <button
                 onClick={() => setActivePanel(activePanel === 'unit-manager' ? null : 'unit-manager')}
-                className={`p-2 border-3 border-black transition-all duration-100 ${activePanel === 'unit-manager'
-                    ? 'bg-secondary-400 text-black shadow-none translate-x-[2px] translate-y-[2px]'
-                    : 'bg-white text-black shadow-neo-sm hover:-translate-y-0.5 hover:shadow-neo'
+                className={`w-9 h-9 flex items-center justify-center border-theme transition-all duration-100 rounded-theme ${activePanel === 'unit-manager'
+                  ? 'bg-secondary text-foreground shadow-none translate-x-[2px] translate-y-[2px]'
+                  : 'bg-surface text-foreground shadow-theme-sm hover:-translate-y-0.5 hover:shadow-theme-base'
                   }`}
-                title="单位设置"
+                title={t('unitManager')}
               >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                </svg>
+                <Settings className="w-4 h-4" />
               </button>
             </div>
           </div>
         </header>
 
-        <main className="max-w-2xl mx-auto px-4 py-8 space-y-8">
-          {/* 工具面板 */}
+        <main className="max-w-2xl mx-auto px-4 py-6 space-y-6">
           {activePanel === 'unit-manager' && (
-            <div className="animate-bounce-slight">
+            <div className="animate-fade-in">
               <UnitManager unitSystem={unitSystem} onUpdateUnits={handleUpdateUnits} />
             </div>
           )}
           {activePanel === 'converter' && (
-            <div className="animate-bounce-slight">
+            <div className="animate-fade-in">
               <UnitConverter unitSystem={unitSystem} />
             </div>
           )}
 
-          {/* 快速添加表单 */}
-          <div ref={formRef} className="bg-white border-3 border-black shadow-neo p-6 relative">
-            <div className="absolute -top-3 -left-3 bg-secondary-400 border-3 border-black px-3 py-1 shadow-neo-sm transform -rotate-2">
-              <span className="font-black text-sm uppercase">Add Item</span>
+          <div ref={formRef} className="theme-card p-5 relative">
+            <div className="absolute -top-3 -left-2 bg-secondary border-theme px-3 py-1 shadow-theme-sm transform -rotate-2 rounded-theme flex items-center gap-1">
+              <Plus className="w-3 h-3" />
+              <span className="font-semibold text-xs text-foreground">{t('addItem')}</span>
             </div>
-            <div className="flex items-center justify-end mb-6">
+            <div className="flex items-center justify-end mb-5">
               <CurrencySelector
                 onCurrencyChange={handleCurrencyChange}
                 defaultCurrency={baseCurrency}
@@ -151,32 +151,29 @@ export default function Home() {
             <AddProductForm onAddProduct={handleAddProduct} unitSystem={unitSystem} defaultCurrency={baseCurrency} />
           </div>
 
-          {/* 商品列表 */}
-          <div className="bg-white border-3 border-black shadow-neo overflow-hidden">
-            <div className="px-6 py-4 border-b-3 border-black flex items-center justify-between bg-surface-100">
-              <div className="flex items-center gap-3">
-                <h2 className="font-black text-xl text-black uppercase">Results</h2>
-                <span className="text-sm font-bold bg-black text-white px-3 py-1 rounded-none">
-                  {products.length}
-                </span>
-              </div>
+          <div className="mt-6">
+            <div className="flex items-center justify-between mb-4 px-1">
+              <h2 className="text-base font-bold text-foreground flex items-center gap-2">
+                <BarChart3 className="w-5 h-5" />
+                {t('results')}
+              </h2>
               {products.length > 0 && (
                 <button
                   onClick={handleClearAll}
-                  className="text-sm font-bold text-black hover:text-accent-500 hover:underline decoration-3 underline-offset-4 transition-colors"
+                  className="text-sm font-medium text-red-500 hover:text-red-600 transition-colors flex items-center gap-1"
                 >
-                  CLEAR ALL
+                  <Trash2 className="w-3 h-3" />
+                  {t('clearAll')}
                 </button>
               )}
             </div>
-            <div className="p-4 sm:p-6 bg-white">
-              <ProductList
-                products={products}
-                baseCurrency={baseCurrency}
-                onRemoveProduct={handleRemoveProduct}
-                unitSystem={unitSystem}
-              />
-            </div>
+
+            <ProductList
+              products={products}
+              baseCurrency={baseCurrency}
+              onRemoveProduct={handleRemoveProduct}
+              unitSystem={unitSystem}
+            />
           </div>
         </main>
       </div>

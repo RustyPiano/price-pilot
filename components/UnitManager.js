@@ -1,23 +1,26 @@
 import { useState } from 'react';
 import { toast } from 'react-hot-toast';
 import { defaultUnitSystem } from '../constants/unitSystem';
+import { useLanguage } from '../context/LanguageContext';
+import { X, Plus } from 'lucide-react';
 
 export default function UnitManager({ unitSystem, onUpdateUnits }) {
     const [selectedType, setSelectedType] = useState('weight');
     const [showAddUnit, setShowAddUnit] = useState(false);
     const [newUnit, setNewUnit] = useState({ code: '', displayName: '', rate: '' });
+    const { t } = useLanguage();
 
     const handleAddUnit = (e) => {
         e.preventDefault();
 
         if (!newUnit.code || !newUnit.displayName || !newUnit.rate) {
-            toast.error('请填写完整信息');
+            toast.error(t('fillComplete'));
             return;
         }
 
         const rate = parseFloat(newUnit.rate);
         if (isNaN(rate) || rate <= 0) {
-            toast.error('请输入有效的转换率');
+            toast.error(t('enterValidRate'));
             return;
         }
 
@@ -27,130 +30,126 @@ export default function UnitManager({ unitSystem, onUpdateUnits }) {
         onUpdateUnits(updatedSystem);
         setNewUnit({ code: '', displayName: '', rate: '' });
         setShowAddUnit(false);
-        toast.success('单位已添加');
+        toast.success(t('unitAdded'));
     };
 
     const handleDeleteUnit = (unitCode) => {
         if (unitCode === unitSystem[selectedType].baseUnit) {
-            toast.error('不能删除基准单位');
+            toast.error(t('cannotDeleteBase'));
             return;
         }
 
         const updatedSystem = { ...unitSystem };
         delete updatedSystem[selectedType].conversions[unitCode];
         onUpdateUnits(updatedSystem);
-        toast.success('单位已删除');
+        toast.success(t('unitDeleted'));
     };
 
     const resetToDefault = () => {
-        if (confirm('确定重置所有单位设置吗？')) {
+        if (confirm(t('confirmReset'))) {
             onUpdateUnits(defaultUnitSystem);
         }
     };
 
     return (
-        <div className="bg-white border-3 border-black shadow-neo p-6">
-            <div className="flex justify-between items-center mb-6">
-                <h2 className="font-black text-xl text-black uppercase">Unit Manager</h2>
+        <div className="theme-card p-5">
+            <div className="flex justify-between items-center mb-5">
+                <h2 className="font-bold text-lg text-foreground">{t('unitManager')}</h2>
                 <button
                     onClick={resetToDefault}
-                    className="text-sm font-bold text-black hover:text-accent-500 hover:underline decoration-3 underline-offset-4 transition-colors"
+                    className="text-sm font-medium text-foreground hover:text-accent transition-colors"
                 >
-                    RESET DEFAULT
+                    {t('resetDefault')}
                 </button>
             </div>
 
-            {/* 单位类型标签 */}
-            <div className="flex gap-3 mb-6 overflow-x-auto pb-2 scrollbar-hide">
+            <div className="flex gap-2 mb-5 overflow-x-auto pb-2 scrollbar-hide">
                 {Object.entries(unitSystem).map(([type, info]) => (
                     <button
                         key={type}
                         onClick={() => setSelectedType(type)}
-                        className={`px-4 py-2 border-3 border-black font-bold uppercase transition-all ${selectedType === type
-                                ? 'bg-secondary-400 text-black shadow-none translate-x-[2px] translate-y-[2px]'
-                                : 'bg-white text-black shadow-neo-sm hover:-translate-y-0.5 hover:shadow-neo'
+                        className={`px-3 py-2 border-theme font-medium text-sm transition-all rounded-theme whitespace-nowrap ${selectedType === type
+                                ? 'bg-secondary text-foreground shadow-none translate-x-[2px] translate-y-[2px]'
+                                : 'bg-surface text-foreground shadow-theme-sm hover:-translate-y-0.5 hover:shadow-theme-base'
                             }`}
                     >
-                        {info.displayName}
+                        {t(`unitTypes.${type}`) || info.displayName}
                     </button>
                 ))}
             </div>
 
-            {/* 单位列表 */}
-            <div className="space-y-3 mb-6">
+            <div className="space-y-2 mb-5">
                 {Object.entries(unitSystem[selectedType].conversions).map(([code, unit]) => (
-                    <div key={code} className="flex items-center justify-between p-4 bg-white border-3 border-black shadow-neo-sm">
-                        <div>
-                            <span className="font-black text-lg text-black mr-2">{unit.displayName}</span>
-                            <span className="text-sm font-bold bg-black text-white px-2 py-0.5 font-mono">
+                    <div key={code} className="flex items-center justify-between p-3 bg-surface border-theme shadow-theme-sm rounded-theme">
+                        <div className="flex items-center gap-2 flex-wrap min-w-0">
+                            <span className="font-semibold text-foreground">{t(`units.${code}`) || unit.displayName}</span>
+                            <span className="text-xs font-medium bg-foreground text-white px-2 py-0.5 font-mono rounded-theme whitespace-nowrap">
                                 {code} = {unit.rate} {unitSystem[selectedType].baseUnit}
                             </span>
                         </div>
                         {code !== unitSystem[selectedType].baseUnit && (
                             <button
                                 onClick={() => handleDeleteUnit(code)}
-                                className="p-1.5 border-3 border-black bg-white hover:bg-accent-500 hover:text-white transition-colors shadow-neo-sm active:translate-x-[2px] active:translate-y-[2px] active:shadow-none"
+                                className="w-8 h-8 flex items-center justify-center flex-shrink-0 ml-2 border-theme bg-surface hover:bg-accent hover:text-white transition-colors shadow-theme-sm active:translate-x-[2px] active:translate-y-[2px] active:shadow-none rounded-theme"
                             >
-                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M6 18L18 6M6 6l12 12" />
-                                </svg>
+                                <X className="w-4 h-4" />
                             </button>
                         )}
                     </div>
                 ))}
             </div>
 
-            {/* 添加单位 */}
             {!showAddUnit ? (
                 <button
                     onClick={() => setShowAddUnit(true)}
-                    className="w-full py-3 border-3 border-dashed border-black text-black font-black uppercase hover:bg-primary-50 transition-all hover:border-solid"
+                    className="w-full py-3 border-theme border-dashed text-foreground font-medium hover:bg-surface-100 transition-all hover:border-solid rounded-theme flex items-center justify-center gap-1"
                 >
-                    + Add New Unit
+                    <Plus className="w-4 h-4" />
+                    {t('addNewUnit')}
                 </button>
             ) : (
-                <form onSubmit={handleAddUnit} className="space-y-4 p-4 border-3 border-black bg-surface-100">
-                    <div className="grid grid-cols-3 gap-4">
+                <form onSubmit={handleAddUnit} className="space-y-3 p-4 border-theme bg-surface-100 rounded-theme">
+                    <div className="grid grid-cols-3 gap-2">
                         <input
                             type="text"
                             value={newUnit.code}
                             onChange={(e) => setNewUnit({ ...newUnit, code: e.target.value })}
-                            className="px-3 py-2 bg-white border-3 border-black font-bold outline-none focus:shadow-neo transition-all"
-                            placeholder="Code (kg)"
+                            className="theme-input font-medium text-sm"
+                            placeholder={t('codePlaceholder')}
                         />
                         <input
                             type="text"
                             value={newUnit.displayName}
                             onChange={(e) => setNewUnit({ ...newUnit, displayName: e.target.value })}
-                            className="px-3 py-2 bg-white border-3 border-black font-bold outline-none focus:shadow-neo transition-all"
-                            placeholder="Name (Kilogram)"
+                            className="theme-input font-medium text-sm"
+                            placeholder={t('namePlaceholder')}
                         />
                         <input
                             type="number"
                             step="any"
                             value={newUnit.rate}
                             onChange={(e) => setNewUnit({ ...newUnit, rate: e.target.value })}
-                            className="px-3 py-2 bg-white border-3 border-black font-bold outline-none focus:shadow-neo transition-all"
-                            placeholder="Rate (1000)"
+                            className="theme-input font-medium text-sm"
+                            placeholder={t('ratePlaceholder')}
                         />
                     </div>
-                    <div className="flex gap-4">
+                    <div className="flex gap-2">
                         <button
                             type="button"
                             onClick={() => setShowAddUnit(false)}
-                            className="flex-1 py-2 border-3 border-black bg-white font-bold uppercase hover:bg-gray-100 transition-colors"
+                            className="flex-1 py-2 border-theme bg-surface font-medium text-sm hover:bg-gray-100 transition-colors rounded-theme"
                         >
-                            Cancel
+                            {t('cancel')}
                         </button>
                         <button
                             type="submit"
-                            className="flex-1 py-2 bg-black text-white border-3 border-black font-bold uppercase hover:bg-gray-800 transition-colors shadow-neo-sm active:translate-x-[2px] active:translate-y-[2px] active:shadow-none"
+                            className="flex-1 py-2 bg-foreground text-white border-theme font-medium text-sm hover:bg-gray-800 transition-colors shadow-theme-sm active:translate-x-[2px] active:translate-y-[2px] active:shadow-none rounded-theme"
                         >
-                            Add Unit
+                            {t('addUnit')}
                         </button>
                     </div>
                 </form>
             )}
         </div>
     );
-} 
+}

@@ -1,8 +1,12 @@
 import { useState, useEffect } from 'react';
-import { currencies } from '../constants/currencies';
+import { getCurrencies } from '../constants/currencies';
+import { useLanguage } from '../context/LanguageContext';
+import { ChevronDown } from 'lucide-react';
 
 export default function CurrencySelector({ onCurrencyChange, defaultCurrency = 'CNY' }) {
     const [selectedCurrency, setSelectedCurrency] = useState(defaultCurrency);
+    const { locale } = useLanguage();
+    const currencies = getCurrencies(locale);
 
     useEffect(() => {
         setSelectedCurrency(defaultCurrency);
@@ -15,11 +19,11 @@ export default function CurrencySelector({ onCurrencyChange, defaultCurrency = '
     };
 
     return (
-        <div className="relative">
+        <div className="relative inline-block">
             <select
                 value={selectedCurrency}
                 onChange={handleSelect}
-                className="appearance-none pl-4 pr-10 py-2 bg-white border-3 border-black rounded-none text-sm font-black text-black focus:shadow-neo cursor-pointer outline-none transition-all hover:-translate-y-0.5 hover:shadow-neo-sm"
+                className="theme-input appearance-none pl-3 pr-12 py-2 text-sm font-bold text-foreground cursor-pointer hover:-translate-y-0.5 hover:shadow-theme-sm transition-all"
             >
                 {currencies.map((currency) => (
                     <option key={currency.code} value={currency.code}>
@@ -27,11 +31,7 @@ export default function CurrencySelector({ onCurrencyChange, defaultCurrency = '
                     </option>
                 ))}
             </select>
-            <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-black">
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M19 9l-7 7-7-7" />
-                </svg>
-            </div>
+            <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none text-foreground" />
         </div>
     );
 }
