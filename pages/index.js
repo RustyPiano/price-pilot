@@ -184,11 +184,11 @@ export default function Home() {
     const summaries = summaryMap[list.id] || [];
 
     return (
-      <div key={list.id} className="theme-card p-5 flex flex-col gap-4">
+      <div key={list.id} className="theme-card p-4 sm:p-5 flex flex-col gap-4">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
-            <h2 className="text-lg font-bold text-foreground truncate">{list.name}</h2>
-            <p className="text-sm text-gray-500">
+            <h2 className="text-base sm:text-lg font-bold text-foreground truncate">{list.name}</h2>
+            <p className="text-sm text-gray-500 leading-5">
               {list.category || t('uncategorizedList')}
             </p>
           </div>
@@ -214,22 +214,22 @@ export default function Home() {
 
         <div className="grid grid-cols-2 gap-3 text-sm">
           <div className="rounded-theme border-theme bg-surface p-3">
-            <p className="text-xs uppercase tracking-wide text-gray-500">{t('listItemsCount')}</p>
-            <p className="text-lg font-bold text-foreground">{list.products.length}</p>
+            <p className="text-[11px] sm:text-xs tracking-[0.12em] text-gray-500">{t('listItemsCount')}</p>
+            <p className="text-base sm:text-lg font-bold text-foreground">{list.products.length}</p>
           </div>
           <div className="rounded-theme border-theme bg-surface p-3">
-            <p className="text-xs uppercase tracking-wide text-gray-500">{t('listBaseCurrency')}</p>
-            <p className="text-lg font-bold text-foreground">{list.baseCurrency}</p>
+            <p className="text-[11px] sm:text-xs tracking-[0.12em] text-gray-500">{t('listBaseCurrency')}</p>
+            <p className="text-base sm:text-lg font-bold text-foreground">{list.baseCurrency}</p>
           </div>
         </div>
 
         <div className="space-y-2">
-          <p className="text-xs uppercase tracking-wide text-gray-500">{t('listBestSummary')}</p>
+          <p className="text-[11px] sm:text-xs tracking-[0.12em] text-gray-500">{t('listBestSummary')}</p>
           {summaries.length > 0 ? (
             summaries.map((summary) => (
               <div key={`${list.id}-${summary.unitType}`} className="rounded-theme border-theme bg-surface p-3">
                 <p className="text-sm font-semibold text-foreground">{summary.bestProduct.name}</p>
-                <p className="text-xs text-gray-500">
+                <p className="text-xs text-gray-500 leading-5">
                   {(t(`unitTypes.${summary.unitType}`) || summary.unitType)} · {formatCurrencyAmount(summary.bestProduct.unitPrice, list.baseCurrency, locale)}/{t(`units.${summary.baseUnit}`) || summary.baseUnit}
                 </p>
               </div>
@@ -239,11 +239,11 @@ export default function Home() {
           )}
         </div>
 
-        <div className="flex items-center justify-between text-xs text-gray-500">
-          <span>{t('listUpdatedAt').replace('{date}', formatDate(list.updatedAt))}</span>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between text-xs text-gray-500">
+          <span className="leading-5">{t('listUpdatedAt').replace('{date}', formatDate(list.updatedAt))}</span>
           <Link
             href={`/list/${list.id}`}
-            className="theme-btn theme-btn-primary px-4 py-2 text-sm font-semibold inline-flex items-center gap-2"
+            className="theme-btn theme-btn-primary w-full sm:w-auto px-4 py-2 text-sm font-semibold inline-flex items-center justify-center gap-2"
           >
             {t('openList')}
             <ArrowRight className="w-4 h-4" />
@@ -261,15 +261,15 @@ export default function Home() {
         <meta name="viewport" content="width=device-width, initial-scale=1" />
       </Head>
 
-      <div className="min-h-screen bg-surface-100 pb-20 font-sans transition-colors duration-300">
+      <div className="min-h-screen bg-surface-100 pb-16 sm:pb-20 font-sans transition-colors duration-300">
         <header className="bg-primary border-b-theme sticky top-0 z-50 transition-colors duration-300">
-          <div className="max-w-5xl mx-auto px-4 h-14 flex items-center justify-between">
+          <div className="max-w-5xl mx-auto px-4 h-16 sm:h-14 flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <div className="w-9 h-9 bg-surface border-theme flex items-center justify-center text-foreground font-bold text-lg shadow-theme-sm rounded-theme">
+              <div className="w-10 h-10 sm:w-9 sm:h-9 bg-surface border-theme flex items-center justify-center text-foreground font-bold text-lg shadow-theme-sm rounded-theme">
                 P
               </div>
               <div>
-                <h1 className="text-lg font-bold text-foreground tracking-tight">{t('comparisonListsTitle')}</h1>
+                <h1 className="text-base sm:text-lg font-bold text-foreground tracking-tight">{t('comparisonListsTitle')}</h1>
               </div>
             </div>
             <div className="flex items-center gap-2">
@@ -279,39 +279,39 @@ export default function Home() {
           </div>
         </header>
 
-        <main className="max-w-5xl mx-auto px-4 py-6 space-y-6">
+        <main className="max-w-5xl mx-auto px-4 py-5 sm:py-6 space-y-5 sm:space-y-6">
           <section className="grid gap-4 lg:grid-cols-[1.4fr_1fr]">
-            <div className="theme-card p-6 space-y-4">
+            <div className="theme-card p-5 sm:p-6 space-y-4">
               <div className="space-y-2">
-                <p className="text-sm font-semibold uppercase tracking-[0.2em] text-gray-500">{t('comparisonListsEyebrow')}</p>
-                <h2 className="text-3xl font-bold text-foreground">{t('comparisonListsHeroTitle')}</h2>
-                <p className="text-base text-gray-600 max-w-2xl">{t('comparisonListsHeroBody')}</p>
+                <p className="text-[11px] sm:text-sm font-semibold tracking-[0.14em] text-gray-500">{t('comparisonListsEyebrow')}</p>
+                <h2 className="text-2xl sm:text-3xl font-bold text-foreground leading-tight">{t('comparisonListsHeroTitle')}</h2>
+                <p className="text-sm sm:text-base text-gray-600 max-w-2xl leading-6">{t('comparisonListsHeroBody')}</p>
               </div>
 
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div className="rounded-theme border-theme bg-surface p-4">
-                  <p className="text-xs uppercase tracking-wide text-gray-500">{t('activeListsLabel')}</p>
-                  <p className="text-2xl font-bold text-foreground">{activeLists.length}</p>
+                  <p className="text-[11px] sm:text-xs tracking-[0.12em] text-gray-500">{t('activeListsLabel')}</p>
+                  <p className="text-xl sm:text-2xl font-bold text-foreground">{activeLists.length}</p>
                 </div>
                 <div className="rounded-theme border-theme bg-surface p-4">
-                  <p className="text-xs uppercase tracking-wide text-gray-500">{t('archivedListsLabel')}</p>
-                  <p className="text-2xl font-bold text-foreground">{archivedLists.length}</p>
+                  <p className="text-[11px] sm:text-xs tracking-[0.12em] text-gray-500">{t('archivedListsLabel')}</p>
+                  <p className="text-xl sm:text-2xl font-bold text-foreground">{archivedLists.length}</p>
                 </div>
                 <div className="rounded-theme border-theme bg-surface p-4">
-                  <p className="text-xs uppercase tracking-wide text-gray-500">{t('productsLabel')}</p>
-                  <p className="text-2xl font-bold text-foreground">{lists.reduce((sum, list) => sum + list.products.length, 0)}</p>
+                  <p className="text-[11px] sm:text-xs tracking-[0.12em] text-gray-500">{t('productsLabel')}</p>
+                  <p className="text-xl sm:text-2xl font-bold text-foreground">{lists.reduce((sum, list) => sum + list.products.length, 0)}</p>
                 </div>
               </div>
             </div>
 
-            <form onSubmit={handleCreateList} className="theme-card p-6 space-y-4">
+            <form onSubmit={handleCreateList} className="theme-card p-5 sm:p-6 space-y-4">
               <div className="flex items-center gap-2">
                 <Plus className="w-5 h-5 text-foreground" />
-                <h2 className="text-lg font-bold text-foreground">{t('createListTitle')}</h2>
+                <h2 className="text-base sm:text-lg font-bold text-foreground">{t('createListTitle')}</h2>
               </div>
 
               <div>
-                <label htmlFor="new-list-name" className="block text-xs font-semibold uppercase tracking-wide text-foreground mb-2">
+                <label htmlFor="new-list-name" className="block text-[11px] sm:text-xs font-semibold tracking-[0.12em] text-foreground mb-2">
                   {t('listNameLabel')}
                 </label>
                 <input
@@ -325,7 +325,7 @@ export default function Home() {
               </div>
 
               <div>
-                <label htmlFor="new-list-category" className="block text-xs font-semibold uppercase tracking-wide text-foreground mb-2">
+                <label htmlFor="new-list-category" className="block text-[11px] sm:text-xs font-semibold tracking-[0.12em] text-foreground mb-2">
                   {t('listCategoryLabel')}
                 </label>
                 <input
@@ -338,7 +338,7 @@ export default function Home() {
                 />
               </div>
 
-              <button type="submit" className="theme-btn theme-btn-primary w-full py-3 text-sm uppercase tracking-wide inline-flex items-center justify-center gap-2">
+              <button type="submit" className="theme-btn theme-btn-primary w-full py-3 text-sm tracking-[0.08em] inline-flex items-center justify-center gap-2">
                 <Plus className="w-4 h-4" />
                 {t('createListAction')}
               </button>
@@ -360,7 +360,7 @@ export default function Home() {
               ))}
             </div>
           ) : activeLists.length === 0 && archivedLists.length === 0 ? (
-            <div className="theme-card p-8 text-center space-y-4">
+            <div className="theme-card p-6 sm:p-8 text-center space-y-4">
               <div className="w-14 h-14 mx-auto bg-surface border-theme shadow-theme-sm rounded-theme flex items-center justify-center">
                 <FolderOpen className="w-6 h-6 text-foreground" />
               </div>
@@ -374,7 +374,7 @@ export default function Home() {
               <section className="space-y-4">
                 <div className="flex items-center gap-2 px-1">
                   <Layers3 className="w-5 h-5 text-foreground" />
-                  <h2 className="text-lg font-bold text-foreground">{t('activeListsTitle')}</h2>
+                  <h2 className="text-base sm:text-lg font-bold text-foreground">{t('activeListsTitle')}</h2>
                 </div>
                 <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
                   {activeLists.map(renderListCard)}
@@ -385,7 +385,7 @@ export default function Home() {
                 <section className="space-y-4">
                   <div className="flex items-center gap-2 px-1">
                     <Archive className="w-5 h-5 text-foreground" />
-                    <h2 className="text-lg font-bold text-foreground">{t('archivedListsTitle')}</h2>
+                    <h2 className="text-base sm:text-lg font-bold text-foreground">{t('archivedListsTitle')}</h2>
                   </div>
                   <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
                     {archivedLists.map(renderListCard)}

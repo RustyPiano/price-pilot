@@ -8,10 +8,10 @@ export default function PriceComparisonBars({ group, baseCurrency, locale, t }) 
   const highestPrice = Math.max(...group.products.map((product) => product.unitPrice));
 
   return (
-    <div className="theme-card p-4 space-y-3">
+    <div className="theme-card p-4 sm:p-5 space-y-3">
       <div>
-        <h4 className="font-semibold text-foreground">{t('comparisonChartTitle')}</h4>
-        <p className="text-xs text-gray-500">{t('comparisonChartBody')}</p>
+        <h4 className="text-sm font-semibold text-foreground sm:text-base">{t('comparisonChartTitle')}</h4>
+        <p className="text-xs text-gray-500 leading-5">{t('comparisonChartBody')}</p>
       </div>
 
       <div className="space-y-3">
@@ -24,10 +24,10 @@ export default function PriceComparisonBars({ group, baseCurrency, locale, t }) 
               : 'bg-slate-400';
 
           return (
-            <div key={product.id} className="space-y-1">
-              <div className="flex items-center justify-between gap-3 text-sm">
-                <span className="font-medium text-foreground truncate">{product.name}</span>
-                <span className="text-xs text-gray-500 whitespace-nowrap">
+            <div key={product.id} className="space-y-1.5">
+              <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+                <span className="truncate text-sm font-medium text-foreground">{product.name}</span>
+                <span className="text-xs leading-5 text-gray-500 sm:whitespace-nowrap">
                   {formatCurrencyAmount(product.unitPrice, baseCurrency, locale)}/{t(`units.${product.baseUnit}`) || product.baseUnit}
                 </span>
               </div>

@@ -13,16 +13,24 @@ import { ArrowLeftRight, Settings, BarChart3, Plus, Trash2, Download, Share2 } f
 const DELETE_UNDO_DURATION = 5000;
 const CLEAR_ALL_UNDO_DURATION = 8000;
 
-function UndoToast({ title, description, expiresAt, actionLabel, onAction }) {
+function UndoToast({ title, description, expiresAt, actionLabel, onAction, onExpire }) {
   const [secondsLeft, setSecondsLeft] = useState(() => Math.max(1, Math.ceil((expiresAt - Date.now()) / 1000)));
+  const hasExpiredRef = useRef(false);
 
   useEffect(() => {
     const intervalId = window.setInterval(() => {
-      setSecondsLeft(Math.max(0, Math.ceil((expiresAt - Date.now()) / 1000)));
+      const nextSecondsLeft = Math.max(0, Math.ceil((expiresAt - Date.now()) / 1000));
+      setSecondsLeft(nextSecondsLeft);
+
+      if (nextSecondsLeft === 0 && !hasExpiredRef.current) {
+        hasExpiredRef.current = true;
+        window.clearInterval(intervalId);
+        onExpire?.();
+      }
     }, 250);
 
     return () => window.clearInterval(intervalId);
-  }, [expiresAt]);
+  }, [expiresAt, onExpire]);
 
   return (
     <div className="theme-card px-4 py-3 min-w-[280px] max-w-sm flex items-center justify-between gap-4">
@@ -151,7 +159,11 @@ export default function ListWorkspace({ comparisonList, onSaveList }) {
 
     const expiresAt = Date.now() + DELETE_UNDO_DURATION;
     const toastId = `delete-${productId}`;
-    const timeoutId = window.setTimeout(() => {
+    const commitDelete = () => {
+      if (!pendingDeleteRef.current.has(productId)) {
+        return;
+      }
+
       pushListUpdate((currentList) => ({
         products: currentList.products.filter((product) => product.id !== productId),
       }));
@@ -159,7 +171,8 @@ export default function ListWorkspace({ comparisonList, onSaveList }) {
       setPendingProductIds((prev) => prev.filter((id) => id !== productId));
       toast.dismiss(toastId);
       toast.success(t('deleteCommitted'));
-    }, DELETE_UNDO_DURATION);
+    };
+    const timeoutId = window.setTimeout(commitDelete, DELETE_UNDO_DURATION);
 
     pendingDeleteRef.current.set(productId, { timeoutId, toastId });
     setPendingProductIds((prev) => [...prev, productId]);
@@ -172,6 +185,7 @@ export default function ListWorkspace({ comparisonList, onSaveList }) {
           expiresAt={expiresAt}
           actionLabel={t('undoAction')}
           onAction={() => dismissPendingDelete(productId)}
+          onExpire={commitDelete}
         />
       ),
       { id: toastId, duration: DELETE_UNDO_DURATION }
@@ -219,13 +233,18 @@ export default function ListWorkspace({ comparisonList, onSaveList }) {
     const productIds = products.map((product) => product.id);
     const expiresAt = Date.now() + CLEAR_ALL_UNDO_DURATION;
     const toastId = `clear-all-${comparisonList.id}`;
-    const timeoutId = window.setTimeout(() => {
+    const commitClearAll = () => {
+      if (!pendingClearRef.current || pendingClearRef.current.toastId !== toastId) {
+        return;
+      }
+
       pushListUpdate({ products: [] });
       pendingClearRef.current = null;
       setPendingProductIds((prev) => prev.filter((id) => !productIds.includes(id)));
       toast.dismiss(toastId);
       toast.success(t('clearedSuccess'));
-    }, CLEAR_ALL_UNDO_DURATION);
+    };
+    const timeoutId = window.setTimeout(commitClearAll, CLEAR_ALL_UNDO_DURATION);
 
     pendingClearRef.current = { timeoutId, toastId, productIds };
     setPendingProductIds(productIds);
@@ -237,6 +256,7 @@ export default function ListWorkspace({ comparisonList, onSaveList }) {
           description={t('clearPendingDescription')}
           expiresAt={expiresAt}
           actionLabel={t('undoAction')}
+          onExpire={commitClearAll}
           onAction={() => {
             if (!pendingClearRef.current) return;
 
@@ -344,10 +364,10 @@ export default function ListWorkspace({ comparisonList, onSaveList }) {
 
   return (
     <div className="space-y-6">
-      <div className="theme-card p-5 space-y-4">
+      <div className="theme-card p-4 sm:p-5 space-y-4">
         <div className="grid gap-4 md:grid-cols-[2fr_1fr]">
           <div>
-            <label htmlFor="list-name" className="block text-xs font-semibold uppercase tracking-wide text-foreground mb-2">
+            <label htmlFor="list-name" className="block text-[11px] sm:text-xs font-semibold tracking-[0.12em] text-foreground mb-2">
               {t('listNameLabel')}
             </label>
             <input
@@ -357,12 +377,12 @@ export default function ListWorkspace({ comparisonList, onSaveList }) {
               onChange={(event) => setMetadataDraft((prev) => ({ ...prev, name: event.target.value }))}
               onBlur={commitMetadata}
               onKeyDown={(event) => event.key === 'Enter' && commitMetadata()}
-              className="theme-input w-full text-lg font-bold"
+              className="theme-input w-full text-base sm:text-lg font-bold"
               placeholder={t('listNamePlaceholder')}
             />
           </div>
           <div>
-            <label htmlFor="list-category" className="block text-xs font-semibold uppercase tracking-wide text-foreground mb-2">
+            <label htmlFor="list-category" className="block text-[11px] sm:text-xs font-semibold tracking-[0.12em] text-foreground mb-2">
               {t('listCategoryLabel')}
             </label>
             <input
@@ -400,17 +420,19 @@ export default function ListWorkspace({ comparisonList, onSaveList }) {
         </div>
       )}
 
-      <div className={`theme-card p-5 relative ${products.length === 0 || highlightForm ? 'animate-form-focus' : ''}`}>
+      <div className={`theme-card p-4 sm:p-5 relative ${products.length === 0 || highlightForm ? 'animate-form-focus' : ''}`}>
         <div className="absolute -top-3 -left-2 bg-secondary border-theme px-3 py-1 shadow-theme-sm transform -rotate-2 rounded-theme flex items-center gap-1">
           <Plus className="w-3 h-3" />
           <span className="font-semibold text-xs text-foreground">{t('addItem')}</span>
         </div>
-        <div className="flex flex-wrap items-center justify-between gap-3 mb-5">
-          <CurrencySelector
-            onCurrencyChange={(currency) => pushListUpdate({ baseCurrency: currency })}
-            defaultCurrency={baseCurrency}
-          />
-          <div className="flex items-center gap-2">
+        <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between mb-5">
+          <div className="w-full sm:w-auto">
+            <CurrencySelector
+              onCurrencyChange={(currency) => pushListUpdate({ baseCurrency: currency })}
+              defaultCurrency={baseCurrency}
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-2 sm:flex sm:items-center">
             <button
               type="button"
               onClick={() => setActivePanel(activePanel === 'converter' ? null : 'converter')}
@@ -446,18 +468,18 @@ export default function ListWorkspace({ comparisonList, onSaveList }) {
       </div>
 
       <div ref={resultsCaptureRef} className="mt-6">
-        <div className="flex items-center justify-between mb-4 px-1">
-          <h2 className="text-base font-bold text-foreground flex items-center gap-2">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-4 px-1">
+          <h2 className="text-base sm:text-lg font-bold text-foreground flex items-center gap-2">
             <BarChart3 className="w-5 h-5" />
             {t('results')}
           </h2>
           {products.length > 0 && (
-            <div className="flex flex-wrap items-center justify-end gap-2">
+            <div className="grid grid-cols-1 gap-2 sm:flex sm:flex-wrap sm:items-center sm:justify-end">
               <button
                 type="button"
                 onClick={handleShareLink}
                 disabled={isSharingLink}
-                className="theme-btn px-3 py-2 text-xs font-semibold bg-surface text-foreground inline-flex items-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
+                className="theme-btn w-full sm:w-auto px-3 py-2 text-xs font-semibold bg-surface text-foreground inline-flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
               >
                 <Share2 className="w-3 h-3" />
                 {isSharingLink ? t('shareActionBusy') : t('shareLinkAction')}
@@ -466,7 +488,7 @@ export default function ListWorkspace({ comparisonList, onSaveList }) {
                 type="button"
                 onClick={handleShareImage}
                 disabled={isSharingImage}
-                className="theme-btn px-3 py-2 text-xs font-semibold bg-surface text-foreground inline-flex items-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
+                className="theme-btn w-full sm:w-auto px-3 py-2 text-xs font-semibold bg-surface text-foreground inline-flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
               >
                 <Download className="w-3 h-3" />
                 {isSharingImage ? t('shareActionBusy') : t('shareImageAction')}
@@ -475,7 +497,7 @@ export default function ListWorkspace({ comparisonList, onSaveList }) {
                 type="button"
                 onClick={handleClearAll}
                 aria-label={t('clearAll')}
-                className="text-sm font-medium text-red-500 hover:text-red-600 transition-colors flex items-center gap-1"
+                className="theme-btn w-full sm:w-auto px-3 py-2 text-xs font-semibold bg-surface text-red-500 hover:text-red-600 transition-colors inline-flex items-center justify-center gap-2"
               >
                 <Trash2 className="w-3 h-3" />
                 {t('clearAll')}

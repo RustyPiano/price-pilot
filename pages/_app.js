@@ -1,13 +1,10 @@
 import Head from 'next/head';
-import { Inter } from 'next/font/google';
 import { useEffect } from 'react';
 import { Toaster } from 'react-hot-toast';
 import '../styles/globals.css';
 import { ThemeProvider } from '../context/ThemeContext';
 import { LanguageProvider } from '../context/LanguageContext';
 import ErrorBoundary from '../components/ErrorBoundary';
-
-const inter = Inter({ subsets: ['latin'] });
 
 function MyApp({ Component, pageProps }) {
   useEffect(() => {
@@ -24,7 +21,7 @@ function MyApp({ Component, pageProps }) {
     <ErrorBoundary>
       <LanguageProvider>
         <ThemeProvider>
-          <main className={inter.className}>
+          <main className="app-shell">
             <Head>
               <link rel="manifest" href="/manifest.json" />
               <meta name="theme-color" content="#facc15" />

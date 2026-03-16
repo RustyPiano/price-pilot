@@ -168,21 +168,21 @@ export default function ProductEditorForm({
     };
 
     const labelClassName = compact
-        ? 'block text-xs font-semibold text-foreground mb-2 uppercase tracking-wide'
-        : 'block text-sm font-semibold text-foreground mb-2 uppercase tracking-wide';
+        ? 'block text-[11px] sm:text-xs font-semibold text-foreground mb-2 tracking-[0.12em]'
+        : 'block text-[11px] sm:text-xs font-semibold text-foreground mb-2 tracking-[0.12em]';
     const inputClassName = compact
         ? 'theme-input w-full text-sm font-medium placeholder-gray-400'
         : 'theme-input w-full text-base font-medium placeholder-gray-400';
 
     return (
-        <form onSubmit={handleSubmit} onKeyDown={handleKeyDown} className={`space-y-4 ${className}`}>
+        <form onSubmit={handleSubmit} onKeyDown={handleKeyDown} className={`space-y-3 sm:space-y-4 ${className}`}>
             <div>
-                <div className="flex items-center justify-between gap-3 mb-2">
+                <div className="mb-2 flex flex-col items-start gap-2 sm:flex-row sm:items-center sm:justify-between">
                     <label htmlFor={nameInputId} className={`${labelClassName} mb-0`}>{t('productName')}</label>
                     <button
                         type="button"
                         onClick={handleSmartParse}
-                        className="text-xs font-semibold uppercase tracking-wide text-foreground hover:text-accent transition-colors"
+                        className="theme-btn w-full sm:w-auto px-3 py-2 text-[11px] sm:text-xs font-semibold bg-surface text-foreground hover:text-accent transition-colors"
                     >
                         {t('smartParseAction')}
                     </button>
@@ -197,10 +197,10 @@ export default function ProductEditorForm({
                     className={inputClassName}
                     placeholder={t('productNamePlaceholder')}
                 />
-                <p className="mt-2 text-xs text-gray-500">{t('smartParseHint')}</p>
+                <p className="mt-2 text-xs leading-5 text-gray-500">{t('smartParseHint')}</p>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 <div>
                     <label htmlFor={priceInputId} className={labelClassName}>{t('price')}</label>
                     <div className="relative">
@@ -242,7 +242,7 @@ export default function ProductEditorForm({
 
             <div>
                 <label htmlFor={unitInputId} className={labelClassName}>{t('unit')}</label>
-                <div className={`flex ${onCancel ? 'flex-col sm:flex-row' : 'gap-3'} gap-3`}>
+                <div className="flex flex-col sm:flex-row gap-3">
                     <div className="relative flex-1">
                         <select
                             id={unitInputId}
@@ -263,19 +263,19 @@ export default function ProductEditorForm({
                         </select>
                         <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none text-foreground" />
                     </div>
-                    <div className={`flex ${onCancel ? 'sm:w-auto' : ''} gap-3`}>
+                    <div className="grid grid-cols-1 gap-3 sm:flex sm:w-auto">
                         {onCancel && (
                             <button
                                 type="button"
                                 onClick={onCancel}
-                                className="theme-btn px-4 py-3 text-sm font-semibold text-foreground bg-surface"
+                                className="theme-btn w-full sm:w-auto px-4 py-3 text-sm font-semibold text-foreground bg-surface"
                             >
                                 {t('cancel')}
                             </button>
                         )}
                         <button
                             type="submit"
-                            className="theme-btn theme-btn-primary px-6 py-3 uppercase tracking-wider text-sm font-semibold"
+                            className="theme-btn theme-btn-primary w-full sm:w-auto px-6 py-3 tracking-[0.08em] text-sm font-semibold"
                         >
                             {submitLabel}
                         </button>

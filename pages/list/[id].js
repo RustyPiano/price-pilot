@@ -93,20 +93,20 @@ export default function ComparisonListPage() {
         <meta name="viewport" content="width=device-width, initial-scale=1" />
       </Head>
 
-      <div className="min-h-screen bg-surface-100 pb-20 font-sans transition-colors duration-300">
+      <div className="min-h-screen bg-surface-100 pb-16 sm:pb-20 font-sans transition-colors duration-300">
         <header className="bg-primary border-b-theme sticky top-0 z-50 transition-colors duration-300">
-          <div className="max-w-5xl mx-auto px-4 h-14 flex items-center justify-between">
-            <div className="flex items-center gap-3">
+          <div className="max-w-5xl mx-auto px-4 h-16 sm:h-14 flex items-center justify-between">
+            <div className="flex items-center gap-2 sm:gap-3 min-w-0">
               <Link
                 href="/"
-                className="w-9 h-9 flex items-center justify-center border-theme bg-surface text-foreground shadow-theme-sm hover:-translate-y-0.5 hover:shadow-theme-base transition-all rounded-theme"
+                className="w-10 h-10 sm:w-9 sm:h-9 flex items-center justify-center border-theme bg-surface text-foreground shadow-theme-sm hover:-translate-y-0.5 hover:shadow-theme-base transition-all rounded-theme"
                 aria-label={t('backToLists')}
               >
                 <ArrowLeft className="w-4 h-4" />
               </Link>
-              <div>
-                <h1 className="text-lg font-bold text-foreground tracking-tight">{comparisonList?.name || t('listDetailTitle')}</h1>
-                <p className="text-xs text-gray-600">{t('listDetailSubtitle')}</p>
+              <div className="min-w-0">
+                <h1 className="text-base sm:text-lg font-bold text-foreground tracking-tight truncate">{comparisonList?.name || t('listDetailTitle')}</h1>
+                <p className="text-[11px] sm:text-xs text-gray-600 leading-4 sm:leading-5">{t('listDetailSubtitle')}</p>
               </div>
             </div>
             <div className="flex items-center gap-2">
@@ -116,7 +116,7 @@ export default function ComparisonListPage() {
           </div>
         </header>
 
-        <main className="max-w-5xl mx-auto px-4 py-6">
+        <main className="max-w-5xl mx-auto px-4 py-5 sm:py-6">
           {status === 'loading' && (
             <div className="theme-card p-6 text-center text-sm text-gray-500">{t('listLoading')}</div>
           )}
@@ -128,7 +128,7 @@ export default function ComparisonListPage() {
               <button
                 type="button"
                 onClick={() => router.reload()}
-                className="theme-btn theme-btn-primary px-4 py-3 text-sm uppercase tracking-wide"
+                className="theme-btn theme-btn-primary px-4 py-3 text-sm tracking-[0.08em]"
               >
                 {t('retryFetchRates')}
               </button>
@@ -139,7 +139,7 @@ export default function ComparisonListPage() {
             <div className="theme-card p-6 text-center space-y-3">
               <h2 className="text-lg font-bold text-foreground">{t('listNotFoundTitle')}</h2>
               <p className="text-sm text-gray-500">{t('listNotFoundBody')}</p>
-              <Link href="/" className="theme-btn theme-btn-primary inline-flex px-4 py-3 text-sm uppercase tracking-wide">
+              <Link href="/" className="theme-btn theme-btn-primary inline-flex px-4 py-3 text-sm tracking-[0.08em]">
                 {t('backToLists')}
               </Link>
             </div>

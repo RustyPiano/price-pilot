@@ -156,14 +156,14 @@ export default function ProductList({
     return (
       <div className="space-y-3 animate-pulse">
         {[0, 1, 2].map((item) => (
-          <div key={item} className="theme-card p-4">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-theme bg-gray-200" />
+          <div key={item} className="theme-card p-4 sm:p-5">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+              <div className="h-10 w-10 rounded-theme bg-gray-200" />
               <div className="flex-1 space-y-2">
                 <div className="h-4 w-1/3 bg-gray-200 rounded" />
                 <div className="h-3 w-1/2 bg-gray-100 rounded" />
               </div>
-              <div className="w-20 space-y-2">
+              <div className="w-full space-y-2 sm:w-20">
                 <div className="h-4 bg-gray-200 rounded" />
                 <div className="h-3 bg-gray-100 rounded" />
               </div>
@@ -177,22 +177,22 @@ export default function ProductList({
 
   if (loadError && !exchangeRates) {
     return (
-      <div className="theme-card p-6 flex flex-col items-center text-center gap-4 animate-fade-in">
+        <div className="theme-card flex flex-col items-center gap-4 p-6 text-center animate-fade-in">
         <div className="w-14 h-14 bg-surface border-theme shadow-theme-sm rounded-theme flex items-center justify-center">
           <WifiOff className="w-6 h-6 text-accent" />
         </div>
-        <div className="space-y-1">
-          <p className="text-lg font-bold text-foreground">{t('ratesErrorTitle')}</p>
-          <p className="text-sm text-gray-500">{loadError}</p>
-          <p className="text-xs text-gray-500">{t('ratesErrorBody')}</p>
-        </div>
-        <button
-          type="button"
-          onClick={() => setRetryCount((prev) => prev + 1)}
-          className="theme-btn theme-btn-primary px-5 py-3 text-sm uppercase tracking-wide inline-flex items-center gap-2"
-        >
-          <RotateCw className="w-4 h-4" />
-          {t('retryFetchRates')}
+          <div className="space-y-1">
+            <p className="text-lg font-bold text-foreground">{t('ratesErrorTitle')}</p>
+            <p className="text-sm leading-6 text-gray-500">{loadError}</p>
+            <p className="text-xs leading-5 text-gray-500">{t('ratesErrorBody')}</p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setRetryCount((prev) => prev + 1)}
+            className="theme-btn theme-btn-primary inline-flex items-center gap-2 px-5 py-3 text-sm font-semibold tracking-[0.08em]"
+          >
+            <RotateCw className="w-4 h-4" />
+            {t('retryFetchRates')}
         </button>
       </div>
     );
@@ -200,19 +200,19 @@ export default function ProductList({
 
   if (products.length === 0) {
     return (
-      <div className="theme-card p-6 text-center flex flex-col items-center gap-4 animate-fade-in">
+        <div className="theme-card flex flex-col items-center gap-4 p-6 text-center animate-fade-in">
         <div className="w-16 h-16 bg-surface border-theme shadow-theme-sm rounded-theme flex items-center justify-center">
           <ShoppingCart className="w-8 h-8 text-foreground" strokeWidth={1.8} />
         </div>
         <div className="space-y-2">
           <p className="text-lg font-bold text-foreground">{t('emptyStateTitle')}</p>
-          <p className="text-sm text-gray-500 max-w-md">{t('emptyStateDescription')}</p>
-          <p className="text-xs text-gray-500">{t('emptyStateHint')}</p>
+          <p className="max-w-md text-sm leading-6 text-gray-500">{t('emptyStateDescription')}</p>
+          <p className="text-xs leading-5 text-gray-500">{t('emptyStateHint')}</p>
         </div>
         <button
           type="button"
           onClick={onLoadSampleData}
-          className="theme-btn theme-btn-primary px-5 py-3 text-sm uppercase tracking-wide inline-flex items-center gap-2"
+          className="theme-btn theme-btn-primary inline-flex items-center gap-2 px-5 py-3 text-sm font-semibold tracking-[0.08em]"
         >
           <Sparkles className="w-4 h-4" />
           {t('trySampleData')}
@@ -246,7 +246,7 @@ export default function ProductList({
             <AlertTriangle className="w-5 h-5 text-amber-600 mt-0.5 flex-shrink-0" />
             <div>
               <p className="font-semibold text-foreground">{t('groupingNoticeTitle')}</p>
-              <p className="text-sm text-gray-600">{t('groupingNoticeBody')}</p>
+              <p className="text-sm leading-6 text-gray-600">{t('groupingNoticeBody')}</p>
             </div>
           </div>
           <button
@@ -266,14 +266,14 @@ export default function ProductList({
         return (
           <section key={group.unitType} className="space-y-3">
             {hasMixedGroups && (
-              <div className="flex items-center justify-between px-1">
+              <div className="flex flex-col gap-1 px-1 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                  <h3 className="font-bold text-foreground">
+                  <h3 className="text-base sm:text-lg font-bold text-foreground">
                     {isCombinedGroup
                       ? t('combinedComparisonTitle')
                       : t(`unitTypes.${group.unitType}`) || group.unitType}
                   </h3>
-                  <p className="text-xs text-gray-500">
+                  <p className="text-xs leading-5 text-gray-500">
                     {isCombinedGroup
                       ? t('combinedComparisonBody')
                       : `${formatGroupCount(group.products.length)} · /${t(`units.${group.baseUnit}`) || group.baseUnit}`}
@@ -291,12 +291,12 @@ export default function ProductList({
                 return (
                   <div
                     key={product.id}
-                    className="theme-card p-4 border-theme shadow-theme-lg animate-fade-in"
+                    className="theme-card p-4 sm:p-5 border-theme shadow-theme-lg animate-fade-in"
                   >
-                    <div className="flex items-center justify-between gap-3 mb-4">
+                    <div className="mb-4 flex items-center justify-between gap-3">
                       <div>
                         <p className="text-sm font-semibold text-foreground">{t('editingItem')}</p>
-                        <p className="text-xs text-gray-500">
+                        <p className="text-xs leading-5 text-gray-500">
                           {t(`unitTypes.${product.unitType}`) || product.unitType}
                         </p>
                       </div>
@@ -322,71 +322,75 @@ export default function ProductList({
               return (
                 <div
                   key={product.id}
-                  className={`flex items-center justify-between p-4 border-theme transition-all duration-200 rounded-theme ${index === 0
+                  className={`rounded-theme border-theme p-4 transition-all duration-200 sm:p-5 ${index === 0
                     ? 'bg-surface shadow-theme-base hover:-translate-y-1 hover:shadow-theme-lg'
                     : 'bg-surface hover:shadow-theme-base hover:-translate-y-1'
                     } ${isPending ? 'opacity-60' : ''}`}
                 >
-                  <div className="flex items-center gap-3 min-w-0 flex-1">
-                    <span className={`flex-shrink-0 w-9 h-9 flex items-center justify-center text-sm font-bold shadow-theme-sm rounded-theme ${getBadgeColor(index)}`}>
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="flex min-w-0 flex-1 items-start gap-3 sm:items-center">
+                    <span className={`flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-theme text-sm font-bold shadow-theme-sm ${getBadgeColor(index)}`}>
                       #{index + 1}
                     </span>
 
                     <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="font-semibold text-base text-foreground truncate">{product.name}</span>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="truncate text-sm font-semibold text-foreground sm:text-base">{product.name}</span>
                         {index === 0 && (
-                          <span className="flex-shrink-0 text-xs font-semibold bg-primary text-foreground px-2 py-0.5 border-theme uppercase shadow-theme-sm rounded-theme inline-flex items-center gap-1">
+                          <span className="inline-flex flex-shrink-0 items-center gap-1 rounded-theme border-theme bg-primary px-2 py-0.5 text-[11px] font-semibold text-foreground shadow-theme-sm sm:text-xs">
                             <Trophy className="w-3 h-3" />
                             {t('bestDeal')}
                           </span>
                         )}
                       </div>
-                      <div className="text-xs text-gray-500 mt-1 font-medium font-mono">
+                      <div className="mt-1 text-[11px] font-medium leading-5 text-gray-500 sm:text-xs">
                         {product.price} {product.currency} / {product.quantity}{t(`units.${product.unit}`) || product.unit}
                       </div>
                     </div>
-                  </div>
+                    </div>
 
-                  <div className="flex items-center gap-2 flex-shrink-0 ml-2">
-                    <div className="text-right mr-1">
-                      <div className={`font-bold text-lg ${index === 0 ? 'text-foreground' : 'text-gray-600'}`}>
+                  <div className="flex w-full items-center justify-between gap-3 border-t border-black/5 pt-3 sm:ml-4 sm:w-auto sm:justify-end sm:border-t-0 sm:pt-0">
+                    <div className="mr-1 text-left sm:text-right">
+                      <div className={`text-base font-bold sm:text-lg ${index === 0 ? 'text-foreground' : 'text-gray-600'}`}>
                         {formatPrice(product.unitPrice)}
                       </div>
-                      <div className="text-xs text-gray-500 font-medium">
+                      <div className="text-[11px] font-medium text-gray-500 sm:text-xs">
                         /{t(`units.${product.baseUnit}`) || product.baseUnit}
                       </div>
                     </div>
 
-                    <button
-                      type="button"
-                      onClick={() => setEditingProductId(product.id)}
-                      disabled={actionsDisabled}
-                      aria-label={t('editItem')}
-                      className="w-9 h-9 flex items-center justify-center text-gray-400 hover:text-foreground hover:bg-gray-100 transition-colors rounded-theme hover:shadow-theme-sm disabled:opacity-40 disabled:cursor-not-allowed"
-                    >
-                      <Pencil className="w-4 h-4" />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => onRemoveProduct(product.id)}
-                      disabled={actionsDisabled}
-                      aria-label={locale === 'zh' ? '删除商品' : 'Delete item'}
-                      className="w-9 h-9 flex items-center justify-center text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors rounded-theme hover:shadow-theme-sm disabled:opacity-40 disabled:cursor-not-allowed"
-                    >
-                      <X className="w-5 h-5" />
-                    </button>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setEditingProductId(product.id)}
+                        disabled={actionsDisabled}
+                        aria-label={t('editItem')}
+                        className="w-10 h-10 sm:w-9 sm:h-9 flex items-center justify-center text-gray-400 hover:text-foreground hover:bg-gray-100 transition-colors rounded-theme hover:shadow-theme-sm disabled:opacity-40 disabled:cursor-not-allowed"
+                      >
+                        <Pencil className="w-4 h-4" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => onRemoveProduct(product.id)}
+                        disabled={actionsDisabled}
+                        aria-label={locale === 'zh' ? '删除商品' : 'Delete item'}
+                        className="w-10 h-10 sm:w-9 sm:h-9 flex items-center justify-center text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors rounded-theme hover:shadow-theme-sm disabled:opacity-40 disabled:cursor-not-allowed"
+                      >
+                        <X className="w-5 h-5" />
+                      </button>
+                    </div>
+                  </div>
                   </div>
                 </div>
               );
             })}
 
             {group.products.length >= 2 && priceDifferenceDisplay && (
-              <div className="mt-4 p-4 bg-red-50 border-theme shadow-theme-base text-center rounded-theme">
-                <p className="text-sm font-medium text-foreground flex items-center justify-center gap-2">
+              <div className="mt-4 rounded-theme border-theme bg-red-50 p-4 text-center shadow-theme-base">
+                <p className="flex items-center justify-center gap-2 text-sm font-medium leading-6 text-foreground">
                   <TrendingDown className="w-4 h-4 text-accent" />
                   {t('priceDifference')}
-                  <span className="text-accent font-bold text-lg">
+                  <span className="text-lg font-bold text-accent">
                     {priceDifferenceDisplay}
                   </span>
                 </p>
