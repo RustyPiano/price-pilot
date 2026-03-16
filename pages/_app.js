@@ -11,31 +11,23 @@ function MyApp({ Component, pageProps }) {
       return;
     }
 
-    if (process.env.NODE_ENV !== 'production') {
-      navigator.serviceWorker.getRegistrations()
-        .then((registrations) => Promise.all(registrations.map((registration) => registration.unregister())))
+    navigator.serviceWorker.getRegistrations()
+      .then((registrations) => Promise.all(registrations.map((registration) => registration.unregister())))
+      .catch((error) => {
+        console.error('Failed to unregister service workers:', error);
+      });
+
+    if ('caches' in window) {
+      caches.keys()
+        .then((keys) => Promise.all(
+          keys
+            .filter((key) => key.startsWith('price-pilot-'))
+            .map((key) => caches.delete(key))
+        ))
         .catch((error) => {
-          console.error('Failed to unregister service workers in development:', error);
+          console.error('Failed to clear app caches:', error);
         });
-
-      if ('caches' in window) {
-        caches.keys()
-          .then((keys) => Promise.all(
-            keys
-              .filter((key) => key.startsWith('price-pilot-'))
-              .map((key) => caches.delete(key))
-          ))
-          .catch((error) => {
-            console.error('Failed to clear development caches:', error);
-          });
-      }
-
-      return;
     }
-
-    navigator.serviceWorker.register('/sw.js').catch((error) => {
-      console.error('Failed to register service worker:', error);
-    });
   }, []);
 
   return (

@@ -338,7 +338,10 @@ export default function ProductList({
                       </div>
                     </div>
 
-                    <div className="flex w-full items-center justify-between gap-3 border-t border-theme pt-3 sm:ml-4 sm:w-auto sm:justify-end sm:border-t-0 sm:pt-0">
+                    <div
+                      className="flex w-full items-center justify-between gap-3 border-t pt-3 sm:ml-4 sm:w-auto sm:justify-end sm:border-t-0 sm:pt-0"
+                      style={{ borderColor: 'var(--border)' }}
+                    >
                       <div className="mr-1 text-left sm:text-right">
                         <div className="text-lg font-semibold text-foreground">
                           {formatPrice(product.unitPrice)}
