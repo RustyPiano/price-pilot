@@ -87,9 +87,13 @@ export default function ComparisonListPage() {
   return (
     <>
       <Head>
-        <title>{comparisonList ? `${comparisonList.name} · ${t('appTitle')}` : t('listDetailTitle')}</title>
-        <meta name="description" content={t('comparisonListsDescription')} />
+        <title>{comparisonList ? `${comparisonList.name} · Price Pilot` : `Price Pilot · ${t('listDetailTitle')}`}</title>
+        <meta name="description" content={comparisonList ? `${comparisonList.name} — ${t('listDetailSubtitle')}` : t('metaDescription')} />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <meta name="robots" content="noindex, nofollow" />
+        <meta property="og:type" content="website" />
+        <meta property="og:title" content={comparisonList ? `${comparisonList.name} · Price Pilot` : 'Price Pilot'} />
+        <meta property="og:description" content={locale === 'zh' ? '在 Price Pilot 中查看这份商品单价对比清单。' : 'View this unit price comparison list in Price Pilot.'} />
       </Head>
 
       <div className="page-shell">

@@ -252,9 +252,16 @@ export default function Home() {
   return (
     <>
       <Head>
-        <title>{t('comparisonListsTitle')}</title>
-        <meta name="description" content={t('comparisonListsDescription')} />
+        <title>{locale === 'zh' ? 'Price Pilot · 商品单价对比工具' : 'Price Pilot · Unit Price Comparison'}</title>
+        <meta name="description" content={t('metaDescription')} />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <meta name="keywords" content={locale === 'zh' ? '单价对比,比价工具,超市比价,单价计算,性价比,商品对比,价格对比' : 'unit price comparison,price per unit,grocery comparison,unit cost calculator,shopping comparison'} />
+        <meta property="og:type" content="website" />
+        <meta property="og:title" content={locale === 'zh' ? 'Price Pilot · 商品单价对比工具' : 'Price Pilot · Unit Price Comparison'} />
+        <meta property="og:description" content={t('metaDescription')} />
+        <meta name="twitter:card" content="summary" />
+        <meta name="twitter:title" content={locale === 'zh' ? 'Price Pilot · 商品单价对比工具' : 'Price Pilot · Unit Price Comparison'} />
+        <meta name="twitter:description" content={t('metaDescription')} />
       </Head>
 
       <div className="page-shell">
