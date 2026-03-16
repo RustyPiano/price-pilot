@@ -167,12 +167,10 @@ export default function ProductEditorForm({
         toast.success(t('smartParseSuccess'));
     };
 
-    const labelClassName = compact
-        ? 'block text-[11px] sm:text-xs font-semibold text-foreground mb-2 tracking-[0.12em]'
-        : 'block text-[11px] sm:text-xs font-semibold text-foreground mb-2 tracking-[0.12em]';
+    const labelClassName = 'field-label';
     const inputClassName = compact
-        ? 'theme-input w-full text-sm font-medium placeholder-gray-400'
-        : 'theme-input w-full text-base font-medium placeholder-gray-400';
+        ? 'input text-sm font-medium'
+        : 'input text-base font-medium';
 
     return (
         <form onSubmit={handleSubmit} onKeyDown={handleKeyDown} className={`space-y-3 sm:space-y-4 ${className}`}>
@@ -182,7 +180,7 @@ export default function ProductEditorForm({
                     <button
                         type="button"
                         onClick={handleSmartParse}
-                        className="theme-btn w-full sm:w-auto px-3 py-2 text-[11px] sm:text-xs font-semibold bg-surface text-foreground hover:text-accent transition-colors"
+                        className="btn btn-secondary w-full px-3 text-xs sm:w-auto"
                     >
                         {t('smartParseAction')}
                     </button>
@@ -197,14 +195,14 @@ export default function ProductEditorForm({
                     className={inputClassName}
                     placeholder={t('productNamePlaceholder')}
                 />
-                <p className="mt-2 text-xs leading-5 text-gray-500">{t('smartParseHint')}</p>
+                <p className="mt-2 text-xs leading-5 text-muted">{t('smartParseHint')}</p>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 <div>
                     <label htmlFor={priceInputId} className={labelClassName}>{t('price')}</label>
                     <div className="relative">
-                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-foreground font-semibold text-sm pointer-events-none z-10">
+                        <span className="pointer-events-none absolute left-3 top-1/2 z-10 -translate-y-1/2 text-sm font-semibold text-foreground">
                             {currencySymbols[formData.currency]}
                         </span>
                         <input
@@ -232,8 +230,8 @@ export default function ProductEditorForm({
                         onChange={handleChange}
                         onKeyDown={handleNumberKeyDown}
                         inputMode="decimal"
-                        className={`${inputClassName} px-3`}
-                        placeholder="0"
+                            className={`${inputClassName} px-3`}
+                            placeholder="0"
                         step="any"
                         min="0"
                     />
@@ -242,7 +240,7 @@ export default function ProductEditorForm({
 
             <div>
                 <label htmlFor={unitInputId} className={labelClassName}>{t('unit')}</label>
-                <div className="flex flex-col sm:flex-row gap-3">
+                <div className="flex flex-col gap-3 sm:flex-row">
                     <div className="relative flex-1">
                         <select
                             id={unitInputId}
@@ -261,21 +259,21 @@ export default function ProductEditorForm({
                                 </optgroup>
                             ))}
                         </select>
-                        <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none text-foreground" />
+                        <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" />
                     </div>
                     <div className="grid grid-cols-1 gap-3 sm:flex sm:w-auto">
                         {onCancel && (
                             <button
                                 type="button"
                                 onClick={onCancel}
-                                className="theme-btn w-full sm:w-auto px-4 py-3 text-sm font-semibold text-foreground bg-surface"
+                                className="btn btn-secondary w-full px-4 text-sm sm:w-auto"
                             >
                                 {t('cancel')}
                             </button>
                         )}
                         <button
                             type="submit"
-                            className="theme-btn theme-btn-primary w-full sm:w-auto px-6 py-3 tracking-[0.08em] text-sm font-semibold"
+                            className="btn btn-primary w-full px-6 text-sm sm:w-auto"
                         >
                             {submitLabel}
                         </button>

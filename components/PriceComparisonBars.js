@@ -8,32 +8,32 @@ export default function PriceComparisonBars({ group, baseCurrency, locale, t }) 
   const highestPrice = Math.max(...group.products.map((product) => product.unitPrice));
 
   return (
-    <div className="theme-card p-4 sm:p-5 space-y-3">
+    <div className="panel space-y-3 p-4 sm:p-5">
       <div>
         <h4 className="text-sm font-semibold text-foreground sm:text-base">{t('comparisonChartTitle')}</h4>
-        <p className="text-xs text-gray-500 leading-5">{t('comparisonChartBody')}</p>
+        <p className="text-xs leading-5 text-muted">{t('comparisonChartBody')}</p>
       </div>
 
       <div className="space-y-3">
         {group.products.map((product, index) => {
           const width = highestPrice === 0 ? 0 : (product.unitPrice / highestPrice) * 100;
           const barClassName = index === 0
-            ? 'bg-emerald-500'
+            ? 'is-best'
             : index === group.products.length - 1
-              ? 'bg-rose-500'
-              : 'bg-slate-400';
+              ? 'is-worst'
+              : 'is-mid';
 
           return (
             <div key={product.id} className="space-y-1.5">
               <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
                 <span className="truncate text-sm font-medium text-foreground">{product.name}</span>
-                <span className="text-xs leading-5 text-gray-500 sm:whitespace-nowrap">
+                <span className="text-xs leading-5 text-muted sm:whitespace-nowrap">
                   {formatCurrencyAmount(product.unitPrice, baseCurrency, locale)}/{t(`units.${product.baseUnit}`) || product.baseUnit}
                 </span>
               </div>
-              <div className="h-3 bg-slate-100 rounded-full overflow-hidden">
+              <div className="result-bar-track">
                 <div
-                  className={`h-full ${barClassName} transition-all duration-300`}
+                  className={`result-bar-fill ${barClassName}`}
                   style={{ width: `${Math.max(width, 6)}%` }}
                 />
               </div>

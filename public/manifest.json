@@ -4,8 +4,8 @@
   "description": "Compare unit prices, keep shopping lists, and revisit your best deals.",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#fdfbf7",
-  "theme_color": "#facc15",
+  "background_color": "#f6f3ee",
+  "theme_color": "#f6f3ee",
   "icons": [
     {
       "src": "/icon.svg",

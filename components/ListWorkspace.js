@@ -33,15 +33,15 @@ function UndoToast({ title, description, expiresAt, actionLabel, onAction, onExp
   }, [expiresAt, onExpire]);
 
   return (
-    <div className="theme-card px-4 py-3 min-w-[280px] max-w-sm flex items-center justify-between gap-4">
+    <div className="panel flex min-w-[280px] items-center justify-between gap-4 px-4 py-3">
       <div>
-        <p className="font-semibold text-sm text-foreground">{title}</p>
-        <p className="text-xs text-gray-500">{description} {secondsLeft}s</p>
+        <p className="text-sm font-semibold text-foreground">{title}</p>
+        <p className="text-xs text-muted">{description} {secondsLeft}s</p>
       </div>
       <button
         type="button"
         onClick={onAction}
-        className="theme-btn px-3 py-2 text-xs font-semibold bg-surface whitespace-nowrap"
+        className="btn btn-secondary whitespace-nowrap px-3 text-xs"
       >
         {actionLabel}
       </button>
@@ -318,7 +318,7 @@ export default function ListWorkspace({ comparisonList, onSaveList }) {
     try {
       const { default: html2canvas } = await import('html2canvas');
       const canvas = await html2canvas(resultsCaptureRef.current, {
-        backgroundColor: '#fdfbf7',
+        backgroundColor: '#f6f3ee',
         scale: 2,
         useCORS: true,
       });
@@ -364,10 +364,10 @@ export default function ListWorkspace({ comparisonList, onSaveList }) {
 
   return (
     <div className="space-y-6">
-      <div className="theme-card p-4 sm:p-5 space-y-4">
+      <div className="panel space-y-4 p-4 sm:p-5">
         <div className="grid gap-4 md:grid-cols-[2fr_1fr]">
           <div>
-            <label htmlFor="list-name" className="block text-[11px] sm:text-xs font-semibold tracking-[0.12em] text-foreground mb-2">
+            <label htmlFor="list-name" className="field-label">
               {t('listNameLabel')}
             </label>
             <input
@@ -377,12 +377,12 @@ export default function ListWorkspace({ comparisonList, onSaveList }) {
               onChange={(event) => setMetadataDraft((prev) => ({ ...prev, name: event.target.value }))}
               onBlur={commitMetadata}
               onKeyDown={(event) => event.key === 'Enter' && commitMetadata()}
-              className="theme-input w-full text-base sm:text-lg font-bold"
+              className="input text-base font-semibold sm:text-lg"
               placeholder={t('listNamePlaceholder')}
             />
           </div>
           <div>
-            <label htmlFor="list-category" className="block text-[11px] sm:text-xs font-semibold tracking-[0.12em] text-foreground mb-2">
+            <label htmlFor="list-category" className="field-label">
               {t('listCategoryLabel')}
             </label>
             <input
@@ -392,14 +392,59 @@ export default function ListWorkspace({ comparisonList, onSaveList }) {
               onChange={(event) => setMetadataDraft((prev) => ({ ...prev, category: event.target.value }))}
               onBlur={commitMetadata}
               onKeyDown={(event) => event.key === 'Enter' && commitMetadata()}
-              className="theme-input w-full"
+              className="input"
               placeholder={t('listCategoryPlaceholder')}
             />
           </div>
         </div>
-        <p className="text-xs text-gray-500">
+        <p className="text-xs text-muted">
           {t('listUpdatedAt').replace('{date}', new Date(normalizedList.updatedAt).toLocaleString())}
         </p>
+      </div>
+
+      <div className={`panel space-y-4 p-4 sm:p-5 ${products.length === 0 || highlightForm ? 'panel-highlight' : ''}`}>
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+          <div className="space-y-1">
+            <h2 className="section-title flex items-center gap-2">
+              <Plus className="h-4 w-4 text-brand" />
+              {t('addItem')}
+            </h2>
+            <p className="section-description">{t('addItemsToCompare')}</p>
+          </div>
+
+          <div className="w-full sm:w-auto">
+            <CurrencySelector
+              onCurrencyChange={(currency) => pushListUpdate({ baseCurrency: currency })}
+              defaultCurrency={baseCurrency}
+            />
+          </div>
+        </div>
+
+        <AddProductForm
+          onAddProduct={handleAddProduct}
+          unitSystem={unitSystem}
+          defaultCurrency={baseCurrency}
+          recentUnits={recentUnits}
+        />
+
+        <div className="flex flex-wrap gap-2 pt-1">
+          <button
+            type="button"
+            onClick={() => setActivePanel(activePanel === 'converter' ? null : 'converter')}
+            className={`btn text-sm ${activePanel === 'converter' ? 'btn-primary' : 'btn-secondary'}`}
+          >
+            <ArrowLeftRight className="h-4 w-4" />
+            {t('unitConverter')}
+          </button>
+          <button
+            type="button"
+            onClick={() => setActivePanel(activePanel === 'unit-manager' ? null : 'unit-manager')}
+            className={`btn text-sm ${activePanel === 'unit-manager' ? 'btn-primary' : 'btn-secondary'}`}
+          >
+            <Settings className="h-4 w-4" />
+            {t('unitManager')}
+          </button>
+        </div>
       </div>
 
       {activePanel === 'unit-manager' && (
@@ -420,103 +465,66 @@ export default function ListWorkspace({ comparisonList, onSaveList }) {
         </div>
       )}
 
-      <div className={`theme-card p-4 sm:p-5 relative ${products.length === 0 || highlightForm ? 'animate-form-focus' : ''}`}>
-        <div className="absolute -top-3 -left-2 bg-secondary border-theme px-3 py-1 shadow-theme-sm transform -rotate-2 rounded-theme flex items-center gap-1">
-          <Plus className="w-3 h-3" />
-          <span className="font-semibold text-xs text-foreground">{t('addItem')}</span>
-        </div>
-        <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between mb-5">
-          <div className="w-full sm:w-auto">
-            <CurrencySelector
-              onCurrencyChange={(currency) => pushListUpdate({ baseCurrency: currency })}
-              defaultCurrency={baseCurrency}
-            />
+      <section className="space-y-4">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <div className="space-y-1">
+            <h2 className="section-title flex items-center gap-2">
+              <BarChart3 className="h-5 w-5 text-brand" />
+              {t('results')}
+            </h2>
           </div>
-          <div className="grid grid-cols-2 gap-2 sm:flex sm:items-center">
-            <button
-              type="button"
-              onClick={() => setActivePanel(activePanel === 'converter' ? null : 'converter')}
-              aria-label={t('unitConverter')}
-              title={t('unitConverter')}
-              className={`w-9 h-9 flex items-center justify-center border-theme transition-all duration-100 rounded-theme ${activePanel === 'converter'
-                ? 'bg-secondary text-foreground shadow-none translate-x-[2px] translate-y-[2px]'
-                : 'bg-surface text-foreground shadow-theme-sm hover:-translate-y-0.5 hover:shadow-theme-base'
-                }`}
-            >
-              <ArrowLeftRight className="w-4 h-4" />
-            </button>
-            <button
-              type="button"
-              onClick={() => setActivePanel(activePanel === 'unit-manager' ? null : 'unit-manager')}
-              aria-label={t('unitManager')}
-              title={t('unitManager')}
-              className={`w-9 h-9 flex items-center justify-center border-theme transition-all duration-100 rounded-theme ${activePanel === 'unit-manager'
-                ? 'bg-secondary text-foreground shadow-none translate-x-[2px] translate-y-[2px]'
-                : 'bg-surface text-foreground shadow-theme-sm hover:-translate-y-0.5 hover:shadow-theme-base'
-                }`}
-            >
-              <Settings className="w-4 h-4" />
-            </button>
-          </div>
-        </div>
-        <AddProductForm
-          onAddProduct={handleAddProduct}
-          unitSystem={unitSystem}
-          defaultCurrency={baseCurrency}
-          recentUnits={recentUnits}
-        />
-      </div>
 
-      <div ref={resultsCaptureRef} className="mt-6">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-4 px-1">
-          <h2 className="text-base sm:text-lg font-bold text-foreground flex items-center gap-2">
-            <BarChart3 className="w-5 h-5" />
-            {t('results')}
-          </h2>
           {products.length > 0 && (
-            <div className="grid grid-cols-1 gap-2 sm:flex sm:flex-wrap sm:items-center sm:justify-end">
+            <div className="grid grid-cols-1 gap-2 sm:flex sm:flex-wrap sm:justify-end">
               <button
                 type="button"
                 onClick={handleShareLink}
                 disabled={isSharingLink}
-                className="theme-btn w-full sm:w-auto px-3 py-2 text-xs font-semibold bg-surface text-foreground inline-flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
+                className="btn btn-secondary w-full text-sm sm:w-auto"
               >
-                <Share2 className="w-3 h-3" />
+                <Share2 className="h-4 w-4" />
                 {isSharingLink ? t('shareActionBusy') : t('shareLinkAction')}
               </button>
               <button
                 type="button"
                 onClick={handleShareImage}
                 disabled={isSharingImage}
-                className="theme-btn w-full sm:w-auto px-3 py-2 text-xs font-semibold bg-surface text-foreground inline-flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
+                className="btn btn-secondary w-full text-sm sm:w-auto"
               >
-                <Download className="w-3 h-3" />
+                <Download className="h-4 w-4" />
                 {isSharingImage ? t('shareActionBusy') : t('shareImageAction')}
-              </button>
-              <button
-                type="button"
-                onClick={handleClearAll}
-                aria-label={t('clearAll')}
-                className="theme-btn w-full sm:w-auto px-3 py-2 text-xs font-semibold bg-surface text-red-500 hover:text-red-600 transition-colors inline-flex items-center justify-center gap-2"
-              >
-                <Trash2 className="w-3 h-3" />
-                {t('clearAll')}
               </button>
             </div>
           )}
         </div>
 
-        <ProductList
-          products={products}
-          baseCurrency={baseCurrency}
-          onRemoveProduct={handleRemoveProduct}
-          onUpdateProduct={handleUpdateProduct}
-          onLoadSampleData={handleLoadSampleData}
-          pendingProductIds={pendingProductIds}
-          recentUnits={recentUnits}
-          unitSystem={unitSystem}
-        />
-      </div>
+        <div ref={resultsCaptureRef} className="space-y-4">
+          <ProductList
+            products={products}
+            baseCurrency={baseCurrency}
+            onRemoveProduct={handleRemoveProduct}
+            onUpdateProduct={handleUpdateProduct}
+            onLoadSampleData={handleLoadSampleData}
+            pendingProductIds={pendingProductIds}
+            recentUnits={recentUnits}
+            unitSystem={unitSystem}
+          />
+        </div>
+
+        {products.length > 0 && (
+          <div className="flex justify-end">
+            <button
+              type="button"
+              onClick={handleClearAll}
+              aria-label={t('clearAll')}
+              className="btn btn-danger w-full text-sm sm:w-auto"
+            >
+              <Trash2 className="h-4 w-4" />
+              {t('clearAll')}
+            </button>
+          </div>
+        )}
+      </section>
     </div>
   );
 }

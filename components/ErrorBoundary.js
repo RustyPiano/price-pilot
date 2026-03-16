@@ -22,21 +22,21 @@ export default class ErrorBoundary extends React.Component {
     render() {
         if (this.state.hasError) {
             return (
-                <div className="min-h-screen bg-surface-100 text-foreground flex items-center justify-center px-4">
-                    <div className="max-w-md w-full theme-card p-6 text-center space-y-4">
+                <div className="page-shell flex items-center justify-center px-4 text-foreground">
+                    <div className="panel max-w-md w-full space-y-4 p-6 text-center">
                         <div className="space-y-2">
                             <h1 className="text-2xl font-bold">Something went wrong</h1>
-                            <p className="text-sm text-gray-500">
+                            <p className="text-sm text-muted">
                                 The app hit an unexpected error. Reload to try again.
                             </p>
-                            <p className="text-sm text-gray-500">
+                            <p className="text-sm text-muted">
                                 应用遇到了意外错误，刷新后重试。
                             </p>
                         </div>
                         <button
                             type="button"
                             onClick={this.handleRetry}
-                            className="theme-btn theme-btn-primary w-full py-3"
+                            className="btn btn-primary w-full"
                         >
                             Reload
                         </button>

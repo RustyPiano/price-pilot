@@ -28,7 +28,7 @@ export default function ProductList({
   onLoadSampleData,
   pendingProductIds = [],
   recentUnits = [],
-  unitSystem
+  unitSystem,
 }) {
   const [exchangeRates, setExchangeRates] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -100,7 +100,7 @@ export default function ProductList({
       window.clearTimeout(timeoutId);
       controller.abort();
     };
-  }, [baseCurrency, retryCount, hasProducts]);
+  }, [baseCurrency, retryCount, hasProducts, t]);
 
   const enrichedProducts = useMemo(
     () => enrichProducts(products, exchangeRates, baseCurrency, unitSystem),
@@ -135,17 +135,12 @@ export default function ProductList({
 
   const formatPrice = (price) => new Intl.NumberFormat(numberLocale, {
     minimumFractionDigits: 2,
-    maximumFractionDigits: 2
+    maximumFractionDigits: 2,
   }).format(price);
 
   const formatGroupCount = (count) => (
     locale === 'zh' ? `${count} 个商品` : `${count} item${count === 1 ? '' : 's'}`
   );
-
-  const getBadgeColor = (index) => {
-    if (index === 0) return 'bg-primary text-foreground border-theme';
-    return 'bg-surface text-foreground border-theme';
-  };
 
   const handleEditSubmit = (productId, updatedProduct) => {
     onUpdateProduct(productId, updatedProduct);
@@ -154,45 +149,45 @@ export default function ProductList({
 
   if (isLoading) {
     return (
-      <div className="space-y-3 animate-pulse">
+      <div className="space-y-3">
         {[0, 1, 2].map((item) => (
-          <div key={item} className="theme-card p-4 sm:p-5">
+          <div key={item} className="panel space-y-4 p-4 sm:p-5">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-              <div className="h-10 w-10 rounded-theme bg-gray-200" />
+              <div className="skeleton-block h-10 w-10 rounded-full" />
               <div className="flex-1 space-y-2">
-                <div className="h-4 w-1/3 bg-gray-200 rounded" />
-                <div className="h-3 w-1/2 bg-gray-100 rounded" />
+                <div className="skeleton-block h-4 w-1/3" />
+                <div className="skeleton-block h-3 w-1/2" />
               </div>
               <div className="w-full space-y-2 sm:w-20">
-                <div className="h-4 bg-gray-200 rounded" />
-                <div className="h-3 bg-gray-100 rounded" />
+                <div className="skeleton-block h-4 w-full" />
+                <div className="skeleton-block h-3 w-2/3" />
               </div>
             </div>
           </div>
         ))}
-        <p className="text-center text-sm text-gray-500 font-medium">{t('loadingRates')}</p>
+        <p className="text-center text-sm font-medium text-muted">{t('loadingRates')}</p>
       </div>
     );
   }
 
   if (loadError && !exchangeRates) {
     return (
-        <div className="theme-card flex flex-col items-center gap-4 p-6 text-center animate-fade-in">
-        <div className="w-14 h-14 bg-surface border-theme shadow-theme-sm rounded-theme flex items-center justify-center">
-          <WifiOff className="w-6 h-6 text-accent" />
+      <div className="panel flex flex-col items-center gap-4 p-6 text-center animate-fade-in">
+        <div className="flex h-14 w-14 items-center justify-center rounded-full bg-surface-100 text-danger">
+          <WifiOff className="h-6 w-6" />
         </div>
-          <div className="space-y-1">
-            <p className="text-lg font-bold text-foreground">{t('ratesErrorTitle')}</p>
-            <p className="text-sm leading-6 text-gray-500">{loadError}</p>
-            <p className="text-xs leading-5 text-gray-500">{t('ratesErrorBody')}</p>
-          </div>
-          <button
-            type="button"
-            onClick={() => setRetryCount((prev) => prev + 1)}
-            className="theme-btn theme-btn-primary inline-flex items-center gap-2 px-5 py-3 text-sm font-semibold tracking-[0.08em]"
-          >
-            <RotateCw className="w-4 h-4" />
-            {t('retryFetchRates')}
+        <div className="space-y-1">
+          <p className="text-lg font-semibold text-foreground">{t('ratesErrorTitle')}</p>
+          <p className="text-sm leading-6 text-muted">{loadError}</p>
+          <p className="text-xs leading-5 text-muted">{t('ratesErrorBody')}</p>
+        </div>
+        <button
+          type="button"
+          onClick={() => setRetryCount((prev) => prev + 1)}
+          className="btn btn-primary px-5 text-sm"
+        >
+          <RotateCw className="h-4 w-4" />
+          {t('retryFetchRates')}
         </button>
       </div>
     );
@@ -200,21 +195,21 @@ export default function ProductList({
 
   if (products.length === 0) {
     return (
-        <div className="theme-card flex flex-col items-center gap-4 p-6 text-center animate-fade-in">
-        <div className="w-16 h-16 bg-surface border-theme shadow-theme-sm rounded-theme flex items-center justify-center">
-          <ShoppingCart className="w-8 h-8 text-foreground" strokeWidth={1.8} />
+      <div className="panel flex flex-col items-center gap-4 p-6 text-center animate-fade-in">
+        <div className="flex h-16 w-16 items-center justify-center rounded-full bg-surface-100 text-brand">
+          <ShoppingCart className="h-8 w-8" strokeWidth={1.8} />
         </div>
         <div className="space-y-2">
-          <p className="text-lg font-bold text-foreground">{t('emptyStateTitle')}</p>
-          <p className="max-w-md text-sm leading-6 text-gray-500">{t('emptyStateDescription')}</p>
-          <p className="text-xs leading-5 text-gray-500">{t('emptyStateHint')}</p>
+          <p className="text-lg font-semibold text-foreground">{t('emptyStateTitle')}</p>
+          <p className="section-description max-w-md">{t('emptyStateDescription')}</p>
+          <p className="text-xs leading-5 text-muted">{t('emptyStateHint')}</p>
         </div>
         <button
           type="button"
           onClick={onLoadSampleData}
-          className="theme-btn theme-btn-primary inline-flex items-center gap-2 px-5 py-3 text-sm font-semibold tracking-[0.08em]"
+          className="btn btn-primary px-5 text-sm"
         >
-          <Sparkles className="w-4 h-4" />
+          <Sparkles className="h-4 w-4" />
           {t('trySampleData')}
         </button>
       </div>
@@ -224,35 +219,35 @@ export default function ProductList({
   return (
     <div className="space-y-4">
       {isUsingCachedRates && (
-        <div className="theme-card p-4 bg-amber-50/80 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="notice notice-warning flex-col sm:flex-row sm:items-center sm:justify-between">
           <div>
             <p className="font-semibold text-foreground">{t('usingCachedRatesTitle')}</p>
-            <p className="text-sm text-gray-600">{loadError}</p>
+            <p className="mt-1 text-sm text-muted">{loadError}</p>
           </div>
           <button
             type="button"
             onClick={() => setRetryCount((prev) => prev + 1)}
-            className="theme-btn px-4 py-2 text-sm font-semibold bg-surface text-foreground inline-flex items-center gap-2"
+            className="btn btn-secondary text-sm"
           >
-            <RotateCw className="w-4 h-4" />
+            <RotateCw className="h-4 w-4" />
             {t('retryFetchRates')}
           </button>
         </div>
       )}
 
       {hasMixedGroups && (
-        <div className="theme-card p-4 bg-amber-50/80 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="notice notice-warning flex-col sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-start gap-3">
-            <AlertTriangle className="w-5 h-5 text-amber-600 mt-0.5 flex-shrink-0" />
+            <AlertTriangle className="mt-0.5 h-5 w-5 flex-shrink-0 text-warning" />
             <div>
               <p className="font-semibold text-foreground">{t('groupingNoticeTitle')}</p>
-              <p className="text-sm leading-6 text-gray-600">{t('groupingNoticeBody')}</p>
+              <p className="mt-1 text-sm leading-6 text-muted">{t('groupingNoticeBody')}</p>
             </div>
           </div>
           <button
             type="button"
-            onClick={() => setComparisonMode((prev) => prev === 'grouped' ? 'combined' : 'grouped')}
-            className="theme-btn px-4 py-2 text-sm font-semibold bg-surface text-foreground"
+            onClick={() => setComparisonMode((prev) => (prev === 'grouped' ? 'combined' : 'grouped'))}
+            className="btn btn-secondary text-sm"
           >
             {comparisonMode === 'grouped' ? t('compareAllGroups') : t('splitByType')}
           </button>
@@ -266,19 +261,17 @@ export default function ProductList({
         return (
           <section key={group.unitType} className="space-y-3">
             {hasMixedGroups && (
-              <div className="flex flex-col gap-1 px-1 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                  <h3 className="text-base sm:text-lg font-bold text-foreground">
-                    {isCombinedGroup
-                      ? t('combinedComparisonTitle')
-                      : t(`unitTypes.${group.unitType}`) || group.unitType}
-                  </h3>
-                  <p className="text-xs leading-5 text-gray-500">
-                    {isCombinedGroup
-                      ? t('combinedComparisonBody')
-                      : `${formatGroupCount(group.products.length)} · /${t(`units.${group.baseUnit}`) || group.baseUnit}`}
-                  </p>
-                </div>
+              <div className="px-1">
+                <h3 className="text-base font-semibold text-foreground sm:text-lg">
+                  {isCombinedGroup
+                    ? t('combinedComparisonTitle')
+                    : t(`unitTypes.${group.unitType}`) || group.unitType}
+                </h3>
+                <p className="mt-1 text-xs leading-5 text-muted">
+                  {isCombinedGroup
+                    ? t('combinedComparisonBody')
+                    : `${formatGroupCount(group.products.length)} · /${t(`units.${group.baseUnit}`) || group.baseUnit}`}
+                </p>
               </div>
             )}
 
@@ -289,20 +282,15 @@ export default function ProductList({
 
               if (isEditing) {
                 return (
-                  <div
-                    key={product.id}
-                    className="theme-card p-4 sm:p-5 border-theme shadow-theme-lg animate-fade-in"
-                  >
-                    <div className="mb-4 flex items-center justify-between gap-3">
+                  <div key={product.id} className="panel space-y-4 p-4 sm:p-5 animate-fade-in">
+                    <div className="flex items-center justify-between gap-3">
                       <div>
                         <p className="text-sm font-semibold text-foreground">{t('editingItem')}</p>
-                        <p className="text-xs leading-5 text-gray-500">
+                        <p className="text-xs leading-5 text-muted">
                           {t(`unitTypes.${product.unitType}`) || product.unitType}
                         </p>
                       </div>
-                      <span className="text-xs font-semibold bg-secondary text-white px-2 py-1 rounded-theme">
-                        #{index + 1}
-                      </span>
+                      <span className="rank-chip">#{index + 1}</span>
                     </div>
                     <ProductEditorForm
                       initialProduct={product}
@@ -320,77 +308,78 @@ export default function ProductList({
               }
 
               return (
-                <div
+                <article
                   key={product.id}
-                  className={`rounded-theme border-theme p-4 transition-all duration-200 sm:p-5 ${index === 0
-                    ? 'bg-surface shadow-theme-base hover:-translate-y-1 hover:shadow-theme-lg'
-                    : 'bg-surface hover:shadow-theme-base hover:-translate-y-1'
-                    } ${isPending ? 'opacity-60' : ''}`}
+                  className={`panel relative overflow-hidden p-4 sm:p-5 ${isPending ? 'opacity-60' : ''}`}
                 >
+                  {index === 0 && (
+                    <div className="absolute inset-y-0 left-0 w-1 bg-brand" aria-hidden="true" />
+                  )}
+
                   <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <div className="flex min-w-0 flex-1 items-start gap-3 sm:items-center">
-                    <span className={`flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-theme text-sm font-bold shadow-theme-sm ${getBadgeColor(index)}`}>
-                      #{index + 1}
-                    </span>
+                      <span className={`rank-chip ${index === 0 ? 'rank-chip-best' : ''}`}>
+                        #{index + 1}
+                      </span>
 
-                    <div className="min-w-0 flex-1">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <span className="truncate text-sm font-semibold text-foreground sm:text-base">{product.name}</span>
-                        {index === 0 && (
-                          <span className="inline-flex flex-shrink-0 items-center gap-1 rounded-theme border-theme bg-primary px-2 py-0.5 text-[11px] font-semibold text-foreground shadow-theme-sm sm:text-xs">
-                            <Trophy className="w-3 h-3" />
-                            {t('bestDeal')}
-                          </span>
-                        )}
-                      </div>
-                      <div className="mt-1 text-[11px] font-medium leading-5 text-gray-500 sm:text-xs">
-                        {product.price} {product.currency} / {product.quantity}{t(`units.${product.unit}`) || product.unit}
-                      </div>
-                    </div>
-                    </div>
-
-                  <div className="flex w-full items-center justify-between gap-3 border-t border-black/5 pt-3 sm:ml-4 sm:w-auto sm:justify-end sm:border-t-0 sm:pt-0">
-                    <div className="mr-1 text-left sm:text-right">
-                      <div className={`text-base font-bold sm:text-lg ${index === 0 ? 'text-foreground' : 'text-gray-600'}`}>
-                        {formatPrice(product.unitPrice)}
-                      </div>
-                      <div className="text-[11px] font-medium text-gray-500 sm:text-xs">
-                        /{t(`units.${product.baseUnit}`) || product.baseUnit}
+                      <div className="min-w-0 flex-1">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="truncate text-sm font-semibold text-foreground sm:text-base">{product.name}</span>
+                          {index === 0 && (
+                            <span className="pill-brand">
+                              <Trophy className="h-3 w-3" />
+                              {t('bestDeal')}
+                            </span>
+                          )}
+                        </div>
+                        <div className="mt-1 text-xs font-medium leading-5 text-muted">
+                          {product.price} {product.currency} / {product.quantity}{t(`units.${product.unit}`) || product.unit}
+                        </div>
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-2">
-                      <button
-                        type="button"
-                        onClick={() => setEditingProductId(product.id)}
-                        disabled={actionsDisabled}
-                        aria-label={t('editItem')}
-                        className="w-10 h-10 sm:w-9 sm:h-9 flex items-center justify-center text-gray-400 hover:text-foreground hover:bg-gray-100 transition-colors rounded-theme hover:shadow-theme-sm disabled:opacity-40 disabled:cursor-not-allowed"
-                      >
-                        <Pencil className="w-4 h-4" />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => onRemoveProduct(product.id)}
-                        disabled={actionsDisabled}
-                        aria-label={locale === 'zh' ? '删除商品' : 'Delete item'}
-                        className="w-10 h-10 sm:w-9 sm:h-9 flex items-center justify-center text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors rounded-theme hover:shadow-theme-sm disabled:opacity-40 disabled:cursor-not-allowed"
-                      >
-                        <X className="w-5 h-5" />
-                      </button>
+                    <div className="flex w-full items-center justify-between gap-3 border-t border-theme pt-3 sm:ml-4 sm:w-auto sm:justify-end sm:border-t-0 sm:pt-0">
+                      <div className="mr-1 text-left sm:text-right">
+                        <div className="text-lg font-semibold text-foreground">
+                          {formatPrice(product.unitPrice)}
+                        </div>
+                        <div className="text-xs font-medium text-muted">
+                          /{t(`units.${product.baseUnit}`) || product.baseUnit}
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setEditingProductId(product.id)}
+                          disabled={actionsDisabled}
+                          aria-label={t('editItem')}
+                          className="icon-btn"
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => onRemoveProduct(product.id)}
+                          disabled={actionsDisabled}
+                          aria-label={locale === 'zh' ? '删除商品' : 'Delete item'}
+                          className="icon-btn icon-btn-danger"
+                        >
+                          <X className="h-4 w-4" />
+                        </button>
+                      </div>
                     </div>
                   </div>
-                  </div>
-                </div>
+                </article>
               );
             })}
 
             {group.products.length >= 2 && priceDifferenceDisplay && (
-              <div className="mt-4 rounded-theme border-theme bg-red-50 p-4 text-center shadow-theme-base">
+              <div className="notice notice-danger items-center justify-center">
                 <p className="flex items-center justify-center gap-2 text-sm font-medium leading-6 text-foreground">
-                  <TrendingDown className="w-4 h-4 text-accent" />
+                  <TrendingDown className="h-4 w-4 text-danger" />
                   {t('priceDifference')}
-                  <span className="text-lg font-bold text-accent">
+                  <span className="text-lg font-semibold text-danger">
                     {priceDifferenceDisplay}
                   </span>
                 </p>

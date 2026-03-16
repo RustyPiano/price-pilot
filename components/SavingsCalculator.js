@@ -45,10 +45,10 @@ export default function SavingsCalculator({ group, baseCurrency, locale, t }) {
   }
 
   return (
-    <div className="theme-card p-4 sm:p-5 space-y-4">
+    <div className="panel space-y-4 p-4 sm:p-5">
       <div className="space-y-1">
         <h4 className="text-sm font-semibold text-foreground sm:text-base">{t('savingsCalculatorTitle')}</h4>
-        <p className="text-sm text-gray-600 leading-6">
+        <p className="text-sm leading-6 text-muted">
           {calculation
             ? t('savingsCalculatorSummary')
               .replace('{best}', calculation.bestProduct.name)
@@ -58,7 +58,7 @@ export default function SavingsCalculator({ group, baseCurrency, locale, t }) {
       </div>
 
       <div className="space-y-2">
-        <label htmlFor={`monthly-consumption-${group.unitType}`} className="block text-[11px] sm:text-xs font-semibold tracking-[0.12em] text-foreground">
+        <label htmlFor={`monthly-consumption-${group.unitType}`} className="field-label">
           {t('monthlyConsumptionLabel')} ({t(`units.${group.baseUnit}`) || group.baseUnit})
         </label>
         <input
@@ -69,20 +69,20 @@ export default function SavingsCalculator({ group, baseCurrency, locale, t }) {
           step="any"
           value={monthlyConsumption}
           onChange={(event) => setMonthlyConsumption(event.target.value)}
-          className="theme-input w-full text-base font-medium"
+          className="input text-base font-medium"
         />
       </div>
 
       {calculation && (
         <div className="space-y-3">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div className="rounded-theme border-theme bg-surface p-3">
-              <p className="text-[11px] tracking-[0.12em] text-gray-500 sm:text-xs">{t('monthlySavingsLabel')}</p>
-              <p className="text-lg font-bold text-foreground">{formatCurrencyAmount(calculation.monthlySavings, baseCurrency, locale)}</p>
+            <div className="subpanel p-3">
+              <p className="text-xs font-medium text-muted">{t('monthlySavingsLabel')}</p>
+              <p className="mt-1 text-lg font-semibold text-foreground">{formatCurrencyAmount(calculation.monthlySavings, baseCurrency, locale)}</p>
             </div>
-            <div className="rounded-theme border-theme bg-surface p-3">
-              <p className="text-[11px] tracking-[0.12em] text-gray-500 sm:text-xs">{t('annualSavingsLabel')}</p>
-              <p className="text-lg font-bold text-foreground">{formatCurrencyAmount(calculation.annualSavings, baseCurrency, locale)}</p>
+            <div className="subpanel p-3">
+              <p className="text-xs font-medium text-muted">{t('annualSavingsLabel')}</p>
+              <p className="mt-1 text-lg font-semibold text-foreground">{formatCurrencyAmount(calculation.annualSavings, baseCurrency, locale)}</p>
             </div>
           </div>
 
@@ -91,16 +91,16 @@ export default function SavingsCalculator({ group, baseCurrency, locale, t }) {
               <span>{t('savingsRateLabel')}</span>
               <span>{calculation.savingsPercent.toFixed(0)}%</span>
             </div>
-            <div className="h-3 bg-slate-100 rounded-full overflow-hidden">
+            <div className="result-bar-track">
               <div
-                className="h-full bg-emerald-500 transition-all duration-300"
+                className="result-bar-fill is-best"
                 style={{ width: `${Math.min(Math.max(calculation.savingsPercent, 4), 100)}%` }}
               />
             </div>
           </div>
 
           {Number.isFinite(calculation.finishDays) && (
-            <p className="text-sm text-gray-600 leading-6">
+            <p className="text-sm leading-6 text-muted">
               {t('finishUsageHint')
                 .replace('{name}', calculation.bestProduct.name)
                 .replace('{days}', calculation.finishDays.toFixed(1))}

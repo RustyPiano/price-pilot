@@ -3,8 +3,8 @@ import Head from 'next/head';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { toast } from 'react-hot-toast';
-import ThemeToggle from '../components/ThemeToggle';
 import LanguageToggle from '../components/LanguageToggle';
+import PageHeader from '../components/PageHeader';
 import { fetchExchangeRates } from '../constants/currencies';
 import { useLanguage } from '../context/LanguageContext';
 import {
@@ -109,15 +109,8 @@ export default function Home() {
     };
   }, [lists]);
 
-  const activeLists = useMemo(
-    () => lists.filter((list) => !list.archived),
-    [lists]
-  );
-
-  const archivedLists = useMemo(
-    () => lists.filter((list) => list.archived),
-    [lists]
-  );
+  const activeLists = useMemo(() => lists.filter((list) => !list.archived), [lists]);
+  const archivedLists = useMemo(() => lists.filter((list) => list.archived), [lists]);
 
   const refreshLists = async () => {
     const nextLists = await getAllComparisonLists();
@@ -152,7 +145,7 @@ export default function Home() {
         updatedAt: new Date().toISOString(),
       }, locale);
 
-      setLists((prev) => prev.map((item) => item.id === savedList.id ? savedList : item));
+      setLists((prev) => prev.map((item) => (item.id === savedList.id ? savedList : item)));
       toast.success(savedList.archived ? t('listArchivedSuccess') : t('listUnarchivedSuccess'));
     } catch (error) {
       console.error('Failed to toggle archive state:', error);
@@ -184,72 +177,75 @@ export default function Home() {
     const summaries = summaryMap[list.id] || [];
 
     return (
-      <div key={list.id} className="theme-card p-4 sm:p-5 flex flex-col gap-4">
+      <article key={list.id} className="panel flex flex-col gap-4 p-4 sm:p-5">
         <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0">
-            <h2 className="text-base sm:text-lg font-bold text-foreground truncate">{list.name}</h2>
-            <p className="text-sm text-gray-500 leading-5">
+          <div className="min-w-0 space-y-1">
+            <h2 className="truncate text-base font-semibold text-foreground sm:text-lg">{list.name}</h2>
+            <p className="text-sm text-muted">
               {list.category || t('uncategorizedList')}
             </p>
           </div>
+
           <div className="flex items-center gap-2">
             <button
               type="button"
               onClick={() => handleToggleArchive(list)}
               aria-label={list.archived ? t('unarchiveList') : t('archiveList')}
-              className="w-9 h-9 flex items-center justify-center border-theme bg-surface text-foreground shadow-theme-sm hover:-translate-y-0.5 hover:shadow-theme-base transition-all rounded-theme"
+              className="icon-btn"
             >
-              <Archive className="w-4 h-4" />
+              <Archive className="h-4 w-4" />
             </button>
             <button
               type="button"
               onClick={() => handleDeleteList(list.id)}
               aria-label={t('deleteList')}
-              className="w-9 h-9 flex items-center justify-center border-theme bg-surface text-red-500 shadow-theme-sm hover:-translate-y-0.5 hover:shadow-theme-base transition-all rounded-theme"
+              className="icon-btn icon-btn-danger"
             >
-              <Trash2 className="w-4 h-4" />
+              <Trash2 className="h-4 w-4" />
             </button>
           </div>
         </div>
 
         <div className="grid grid-cols-2 gap-3 text-sm">
-          <div className="rounded-theme border-theme bg-surface p-3">
-            <p className="text-[11px] sm:text-xs tracking-[0.12em] text-gray-500">{t('listItemsCount')}</p>
-            <p className="text-base sm:text-lg font-bold text-foreground">{list.products.length}</p>
+          <div className="subpanel p-3">
+            <p className="text-xs font-medium text-muted">{t('listItemsCount')}</p>
+            <p className="mt-1 text-lg font-semibold text-foreground">{list.products.length}</p>
           </div>
-          <div className="rounded-theme border-theme bg-surface p-3">
-            <p className="text-[11px] sm:text-xs tracking-[0.12em] text-gray-500">{t('listBaseCurrency')}</p>
-            <p className="text-base sm:text-lg font-bold text-foreground">{list.baseCurrency}</p>
+          <div className="subpanel p-3">
+            <p className="text-xs font-medium text-muted">{t('listBaseCurrency')}</p>
+            <p className="mt-1 text-lg font-semibold text-foreground">{list.baseCurrency}</p>
           </div>
         </div>
 
         <div className="space-y-2">
-          <p className="text-[11px] sm:text-xs tracking-[0.12em] text-gray-500">{t('listBestSummary')}</p>
+          <p className="text-xs font-medium text-muted">{t('listBestSummary')}</p>
           {summaries.length > 0 ? (
             summaries.map((summary) => (
-              <div key={`${list.id}-${summary.unitType}`} className="rounded-theme border-theme bg-surface p-3">
+              <div key={`${list.id}-${summary.unitType}`} className="subpanel p-3">
                 <p className="text-sm font-semibold text-foreground">{summary.bestProduct.name}</p>
-                <p className="text-xs text-gray-500 leading-5">
+                <p className="mt-1 text-xs leading-5 text-muted">
                   {(t(`unitTypes.${summary.unitType}`) || summary.unitType)} · {formatCurrencyAmount(summary.bestProduct.unitPrice, list.baseCurrency, locale)}/{t(`units.${summary.baseUnit}`) || summary.baseUnit}
                 </p>
               </div>
             ))
           ) : (
-            <p className="text-sm text-gray-500">{t('listBestSummaryEmpty')}</p>
+            <p className="text-sm text-muted">{t('listBestSummaryEmpty')}</p>
           )}
         </div>
 
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between text-xs text-gray-500">
-          <span className="leading-5">{t('listUpdatedAt').replace('{date}', formatDate(list.updatedAt))}</span>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <span className="text-xs leading-5 text-muted">
+            {t('listUpdatedAt').replace('{date}', formatDate(list.updatedAt))}
+          </span>
           <Link
             href={`/list/${list.id}`}
-            className="theme-btn theme-btn-primary w-full sm:w-auto px-4 py-2 text-sm font-semibold inline-flex items-center justify-center gap-2"
+            className="btn btn-primary w-full px-4 text-sm sm:w-auto"
           >
             {t('openList')}
-            <ArrowRight className="w-4 h-4" />
+            <ArrowRight className="h-4 w-4" />
           </Link>
         </div>
-      </div>
+      </article>
     );
   };
 
@@ -261,57 +257,48 @@ export default function Home() {
         <meta name="viewport" content="width=device-width, initial-scale=1" />
       </Head>
 
-      <div className="min-h-screen bg-surface-100 pb-16 sm:pb-20 font-sans transition-colors duration-300">
-        <header className="bg-primary border-b-theme sticky top-0 z-50 transition-colors duration-300">
-          <div className="max-w-5xl mx-auto px-4 h-16 sm:h-14 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div className="w-10 h-10 sm:w-9 sm:h-9 bg-surface border-theme flex items-center justify-center text-foreground font-bold text-lg shadow-theme-sm rounded-theme">
-                P
-              </div>
-              <div>
-                <h1 className="text-base sm:text-lg font-bold text-foreground tracking-tight">{t('comparisonListsTitle')}</h1>
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              <LanguageToggle />
-              <ThemeToggle />
-            </div>
-          </div>
-        </header>
+      <div className="page-shell">
+        <PageHeader title={t('comparisonListsTitle')}>
+          <LanguageToggle />
+        </PageHeader>
 
-        <main className="max-w-5xl mx-auto px-4 py-5 sm:py-6 space-y-5 sm:space-y-6">
-          <section className="grid gap-4 lg:grid-cols-[1.4fr_1fr]">
-            <div className="theme-card p-5 sm:p-6 space-y-4">
+        <main className="mx-auto max-w-5xl space-y-5 px-4 py-5 sm:space-y-6 sm:py-6">
+          <section className="grid gap-4 lg:grid-cols-[1.25fr_0.95fr]">
+            <div className="panel space-y-5 p-5 sm:p-6">
               <div className="space-y-2">
-                <p className="text-[11px] sm:text-sm font-semibold tracking-[0.14em] text-gray-500">{t('comparisonListsEyebrow')}</p>
-                <h2 className="text-2xl sm:text-3xl font-bold text-foreground leading-tight">{t('comparisonListsHeroTitle')}</h2>
-                <p className="text-sm sm:text-base text-gray-600 max-w-2xl leading-6">{t('comparisonListsHeroBody')}</p>
+                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted">{t('comparisonListsEyebrow')}</p>
+                <h2 className="text-2xl font-semibold leading-tight text-foreground sm:text-3xl">
+                  {t('comparisonListsHeroTitle')}
+                </h2>
+                <p className="section-description max-w-2xl">{t('comparisonListsHeroBody')}</p>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <div className="rounded-theme border-theme bg-surface p-4">
-                  <p className="text-[11px] sm:text-xs tracking-[0.12em] text-gray-500">{t('activeListsLabel')}</p>
-                  <p className="text-xl sm:text-2xl font-bold text-foreground">{activeLists.length}</p>
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                <div className="subpanel p-4">
+                  <p className="text-xs font-medium text-muted">{t('activeListsLabel')}</p>
+                  <p className="mt-2 text-2xl font-semibold text-foreground">{activeLists.length}</p>
                 </div>
-                <div className="rounded-theme border-theme bg-surface p-4">
-                  <p className="text-[11px] sm:text-xs tracking-[0.12em] text-gray-500">{t('archivedListsLabel')}</p>
-                  <p className="text-xl sm:text-2xl font-bold text-foreground">{archivedLists.length}</p>
+                <div className="subpanel p-4">
+                  <p className="text-xs font-medium text-muted">{t('archivedListsLabel')}</p>
+                  <p className="mt-2 text-2xl font-semibold text-foreground">{archivedLists.length}</p>
                 </div>
-                <div className="rounded-theme border-theme bg-surface p-4">
-                  <p className="text-[11px] sm:text-xs tracking-[0.12em] text-gray-500">{t('productsLabel')}</p>
-                  <p className="text-xl sm:text-2xl font-bold text-foreground">{lists.reduce((sum, list) => sum + list.products.length, 0)}</p>
+                <div className="subpanel p-4">
+                  <p className="text-xs font-medium text-muted">{t('productsLabel')}</p>
+                  <p className="mt-2 text-2xl font-semibold text-foreground">
+                    {lists.reduce((sum, list) => sum + list.products.length, 0)}
+                  </p>
                 </div>
               </div>
             </div>
 
-            <form onSubmit={handleCreateList} className="theme-card p-5 sm:p-6 space-y-4">
-              <div className="flex items-center gap-2">
-                <Plus className="w-5 h-5 text-foreground" />
-                <h2 className="text-base sm:text-lg font-bold text-foreground">{t('createListTitle')}</h2>
+            <form onSubmit={handleCreateList} className="panel space-y-4 p-5 sm:p-6">
+              <div className="space-y-1">
+                <h2 className="section-title">{t('createListTitle')}</h2>
+                <p className="section-description">{t('comparisonListsDescription')}</p>
               </div>
 
               <div>
-                <label htmlFor="new-list-name" className="block text-[11px] sm:text-xs font-semibold tracking-[0.12em] text-foreground mb-2">
+                <label htmlFor="new-list-name" className="field-label">
                   {t('listNameLabel')}
                 </label>
                 <input
@@ -320,12 +307,12 @@ export default function Home() {
                   value={newList.name}
                   onChange={(event) => setNewList((prev) => ({ ...prev, name: event.target.value }))}
                   placeholder={t('listNamePlaceholder')}
-                  className="theme-input w-full"
+                  className="input"
                 />
               </div>
 
               <div>
-                <label htmlFor="new-list-category" className="block text-[11px] sm:text-xs font-semibold tracking-[0.12em] text-foreground mb-2">
+                <label htmlFor="new-list-category" className="field-label">
                   {t('listCategoryLabel')}
                 </label>
                 <input
@@ -334,12 +321,12 @@ export default function Home() {
                   value={newList.category}
                   onChange={(event) => setNewList((prev) => ({ ...prev, category: event.target.value }))}
                   placeholder={t('listCategoryPlaceholder')}
-                  className="theme-input w-full"
+                  className="input"
                 />
               </div>
 
-              <button type="submit" className="theme-btn theme-btn-primary w-full py-3 text-sm tracking-[0.08em] inline-flex items-center justify-center gap-2">
-                <Plus className="w-4 h-4" />
+              <button type="submit" className="btn btn-primary w-full text-sm">
+                <Plus className="h-4 w-4" />
                 {t('createListAction')}
               </button>
             </form>
@@ -348,33 +335,42 @@ export default function Home() {
           {isLoading ? (
             <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
               {[0, 1, 2].map((item) => (
-                <div key={item} className="theme-card p-5 space-y-3 animate-pulse">
-                  <div className="h-5 w-1/2 bg-gray-200 rounded" />
-                  <div className="h-4 w-1/3 bg-gray-100 rounded" />
+                <div key={item} className="panel space-y-4 p-5">
+                  <div className="skeleton-block h-5 w-1/2" />
+                  <div className="skeleton-block h-4 w-1/3" />
                   <div className="grid grid-cols-2 gap-3">
-                    <div className="h-20 bg-gray-100 rounded-theme" />
-                    <div className="h-20 bg-gray-100 rounded-theme" />
+                    <div className="subpanel space-y-3 p-4">
+                      <div className="skeleton-block h-3 w-2/5" />
+                      <div className="skeleton-block h-6 w-1/3" />
+                    </div>
+                    <div className="subpanel space-y-3 p-4">
+                      <div className="skeleton-block h-3 w-2/5" />
+                      <div className="skeleton-block h-6 w-1/3" />
+                    </div>
                   </div>
-                  <div className="h-16 bg-gray-100 rounded-theme" />
+                  <div className="subpanel space-y-3 p-4">
+                    <div className="skeleton-block h-3 w-1/2" />
+                    <div className="skeleton-block h-4 w-2/3" />
+                  </div>
                 </div>
               ))}
             </div>
           ) : activeLists.length === 0 && archivedLists.length === 0 ? (
-            <div className="theme-card p-6 sm:p-8 text-center space-y-4">
-              <div className="w-14 h-14 mx-auto bg-surface border-theme shadow-theme-sm rounded-theme flex items-center justify-center">
-                <FolderOpen className="w-6 h-6 text-foreground" />
+            <div className="panel space-y-4 p-6 text-center sm:p-8">
+              <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-surface-100 text-brand">
+                <FolderOpen className="h-6 w-6" />
               </div>
               <div className="space-y-2">
-                <h2 className="text-xl font-bold text-foreground">{t('listsEmptyTitle')}</h2>
-                <p className="text-sm text-gray-500">{t('listsEmptyBody')}</p>
+                <h2 className="text-xl font-semibold text-foreground">{t('listsEmptyTitle')}</h2>
+                <p className="section-description">{t('listsEmptyBody')}</p>
               </div>
             </div>
           ) : (
             <>
               <section className="space-y-4">
                 <div className="flex items-center gap-2 px-1">
-                  <Layers3 className="w-5 h-5 text-foreground" />
-                  <h2 className="text-base sm:text-lg font-bold text-foreground">{t('activeListsTitle')}</h2>
+                  <Layers3 className="h-5 w-5 text-brand" />
+                  <h2 className="section-title">{t('activeListsTitle')}</h2>
                 </div>
                 <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
                   {activeLists.map(renderListCard)}
@@ -384,8 +380,8 @@ export default function Home() {
               {archivedLists.length > 0 && (
                 <section className="space-y-4">
                   <div className="flex items-center gap-2 px-1">
-                    <Archive className="w-5 h-5 text-foreground" />
-                    <h2 className="text-base sm:text-lg font-bold text-foreground">{t('archivedListsTitle')}</h2>
+                    <Archive className="h-5 w-5 text-muted" />
+                    <h2 className="section-title">{t('archivedListsTitle')}</h2>
                   </div>
                   <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
                     {archivedLists.map(renderListCard)}

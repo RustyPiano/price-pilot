@@ -1,40 +1,27 @@
 /** @type {import('tailwindcss').Config} */
 export default {
   content: [
-    "./pages/**/*.{js,ts,jsx,tsx,mdx}",
-    "./components/**/*.{js,ts,jsx,tsx,mdx}",
-    "./app/**/*.{js,ts,jsx,tsx,mdx}",
+    './pages/**/*.{js,ts,jsx,tsx,mdx}',
+    './components/**/*.{js,ts,jsx,tsx,mdx}',
+    './app/**/*.{js,ts,jsx,tsx,mdx}',
   ],
   theme: {
     extend: {
       colors: {
-        background: "var(--bg-main)",
-        foreground: "var(--fg-primary)",
-        primary: {
-          DEFAULT: 'var(--col-primary)',
-          50: 'var(--col-primary)', // Simplification for now
-          100: 'var(--col-primary)',
-          400: 'var(--col-primary)',
-          500: 'var(--col-primary)',
-        },
-        secondary: {
-          DEFAULT: 'var(--col-secondary)',
-          50: 'var(--col-secondary)',
-          100: 'var(--col-secondary)',
-          400: 'var(--col-secondary)',
-          500: 'var(--col-secondary)',
-        },
-        accent: {
-          DEFAULT: 'var(--col-accent)',
-          500: 'var(--col-accent)',
+        background: 'var(--canvas)',
+        foreground: 'var(--text-primary)',
+        muted: 'var(--text-secondary)',
+        brand: {
+          DEFAULT: 'var(--brand)',
+          strong: 'var(--brand-strong)',
         },
         surface: {
-          DEFAULT: 'var(--bg-surface)',
-          50: 'var(--bg-surface)',
-          100: 'var(--bg-surface)',
-          200: 'var(--bg-surface)',
+          DEFAULT: 'var(--surface)',
+          100: 'var(--surface-muted)',
         },
-        dark: '#18181b',
+        success: 'var(--success)',
+        warning: 'var(--warning)',
+        danger: 'var(--danger)',
       },
       boxShadow: {
         'theme-base': 'var(--shadow-base)',
@@ -42,32 +29,22 @@ export default {
         'theme-lg': 'var(--shadow-lg)',
       },
       borderWidth: {
-        'theme': 'var(--border-width)',
+        theme: '1px',
       },
       borderColor: {
-        'theme': 'var(--border-color)',
-        DEFAULT: 'var(--border-color)',
+        theme: 'var(--border)',
+        DEFAULT: 'var(--border)',
       },
       borderRadius: {
-        'theme': 'var(--border-radius)',
+        theme: 'var(--radius-md)',
       },
       animation: {
-        'bounce-slight': 'bounceSlight 0.3s infinite alternate',
-        'fade-in': 'fadeIn 0.3s ease-out',
-        'slide-up': 'slideUp 0.4s ease-out',
+        'fade-in': 'fadeIn 0.2s ease-out',
       },
       keyframes: {
-        bounceSlight: {
-          '0%': { transform: 'translateY(0)' },
-          '100%': { transform: 'translateY(-2px)' },
-        },
         fadeIn: {
           '0%': { opacity: '0' },
           '100%': { opacity: '1' },
-        },
-        slideUp: {
-          '0%': { opacity: '0', transform: 'translateY(10px)' },
-          '100%': { opacity: '1', transform: 'translateY(0)' },
         },
       },
     },
