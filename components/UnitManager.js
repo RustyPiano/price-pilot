@@ -8,7 +8,7 @@ export default function UnitManager({ unitSystem, onUpdateUnits }) {
     const [selectedType, setSelectedType] = useState('weight');
     const [showAddUnit, setShowAddUnit] = useState(false);
     const [newUnit, setNewUnit] = useState({ code: '', displayName: '', rate: '' });
-    const { t } = useLanguage();
+    const { t, locale } = useLanguage();
 
     const handleAddUnit = (e) => {
         e.preventDefault();
@@ -24,7 +24,7 @@ export default function UnitManager({ unitSystem, onUpdateUnits }) {
             return;
         }
 
-        const updatedSystem = { ...unitSystem };
+        const updatedSystem = structuredClone(unitSystem);
         updatedSystem[selectedType].conversions[newUnit.code] = { rate, displayName: newUnit.displayName };
 
         onUpdateUnits(updatedSystem);
@@ -39,7 +39,7 @@ export default function UnitManager({ unitSystem, onUpdateUnits }) {
             return;
         }
 
-        const updatedSystem = { ...unitSystem };
+        const updatedSystem = structuredClone(unitSystem);
         delete updatedSystem[selectedType].conversions[unitCode];
         onUpdateUnits(updatedSystem);
         toast.success(t('unitDeleted'));
@@ -90,6 +90,7 @@ export default function UnitManager({ unitSystem, onUpdateUnits }) {
                         {code !== unitSystem[selectedType].baseUnit && (
                             <button
                                 onClick={() => handleDeleteUnit(code)}
+                                aria-label={locale === 'zh' ? `删除单位 ${code}` : `Delete unit ${code}`}
                                 className="w-8 h-8 flex items-center justify-center flex-shrink-0 ml-2 border-theme bg-surface hover:bg-accent hover:text-white transition-colors shadow-theme-sm active:translate-x-[2px] active:translate-y-[2px] active:shadow-none rounded-theme"
                             >
                                 <X className="w-4 h-4" />
@@ -110,21 +111,27 @@ export default function UnitManager({ unitSystem, onUpdateUnits }) {
             ) : (
                 <form onSubmit={handleAddUnit} className="space-y-3 p-4 border-theme bg-surface-100 rounded-theme">
                     <div className="grid grid-cols-3 gap-2">
+                        <label htmlFor="new-unit-code" className="sr-only">{locale === 'zh' ? '单位代号' : 'Unit code'}</label>
                         <input
+                            id="new-unit-code"
                             type="text"
                             value={newUnit.code}
                             onChange={(e) => setNewUnit({ ...newUnit, code: e.target.value })}
                             className="theme-input font-medium text-sm"
                             placeholder={t('codePlaceholder')}
                         />
+                        <label htmlFor="new-unit-name" className="sr-only">{locale === 'zh' ? '单位名称' : 'Unit name'}</label>
                         <input
+                            id="new-unit-name"
                             type="text"
                             value={newUnit.displayName}
                             onChange={(e) => setNewUnit({ ...newUnit, displayName: e.target.value })}
                             className="theme-input font-medium text-sm"
                             placeholder={t('namePlaceholder')}
                         />
+                        <label htmlFor="new-unit-rate" className="sr-only">{locale === 'zh' ? '单位换算率' : 'Unit conversion rate'}</label>
                         <input
+                            id="new-unit-rate"
                             type="number"
                             step="any"
                             value={newUnit.rate}

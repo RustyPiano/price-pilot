@@ -149,6 +149,25 @@ input[type="number"] {
   animation: fadeIn 0.2s ease-out;
 }
 
+@keyframes formFocus {
+  0% {
+    transform: translateY(0);
+    box-shadow: var(--shadow-base);
+  }
+  50% {
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-lg);
+  }
+  100% {
+    transform: translateY(0);
+    box-shadow: var(--shadow-base);
+  }
+}
+
+.animate-form-focus {
+  animation: formFocus 0.9s ease-out;
+}
+
 /* Scrollbar hide */
 .scrollbar-hide {
   -ms-overflow-style: none;

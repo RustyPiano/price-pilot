@@ -7,6 +7,7 @@ export default function CurrencySelector({ onCurrencyChange, defaultCurrency = '
     const [selectedCurrency, setSelectedCurrency] = useState(defaultCurrency);
     const { locale } = useLanguage();
     const currencies = useMemo(() => getCurrencies(locale || 'zh'), [locale]);
+    const selectId = 'base-currency-select';
 
     useEffect(() => {
         setSelectedCurrency(defaultCurrency);
@@ -20,7 +21,11 @@ export default function CurrencySelector({ onCurrencyChange, defaultCurrency = '
 
     return (
         <div className="relative inline-block">
+            <label htmlFor={selectId} className="sr-only">
+                {locale === 'zh' ? '基础币种' : 'Base currency'}
+            </label>
             <select
+                id={selectId}
                 value={selectedCurrency}
                 onChange={handleSelect}
                 className="theme-input appearance-none pl-3 pr-12 py-2 text-sm font-bold text-foreground cursor-pointer hover:-translate-y-0.5 hover:shadow-theme-sm transition-all"

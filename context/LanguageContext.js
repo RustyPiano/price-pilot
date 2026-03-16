@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { translations } from '../constants/translations';
 
 const LanguageContext = createContext();
@@ -7,15 +7,21 @@ export function LanguageProvider({ children }) {
     const [locale, setLocale] = useState('zh'); // Default to Chinese as per original app
 
     useEffect(() => {
-        const savedLocale = localStorage.getItem('locale');
+        const savedLocale = window.localStorage.getItem('locale');
         if (savedLocale) {
             setLocale(savedLocale);
-        } else {
-            // Optional: Detect browser language
-            const browserLang = navigator.language.startsWith('zh') ? 'zh' : 'en';
+            return;
+        }
+
+        const browserLang = window.navigator.language.startsWith('zh') ? 'zh' : 'en';
+        if (browserLang !== 'zh') {
             setLocale(browserLang);
         }
     }, []);
+
+    useEffect(() => {
+        document.documentElement.lang = locale === 'zh' ? 'zh-CN' : 'en-US';
+    }, [locale]);
 
     const toggleLanguage = () => {
         const newLocale = locale === 'zh' ? 'en' : 'zh';
@@ -23,14 +29,14 @@ export function LanguageProvider({ children }) {
         localStorage.setItem('locale', newLocale);
     };
 
-    const t = (key) => {
+    const t = useCallback((key) => {
         const keys = key.split('.');
         let value = translations[locale];
         for (const k of keys) {
             value = value?.[k];
         }
         return value || key;
-    };
+    }, [locale]);
 
     return (
         <LanguageContext.Provider value={{ locale, toggleLanguage, t }}>

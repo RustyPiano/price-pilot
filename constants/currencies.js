@@ -1,5 +1,7 @@
 import { translations } from './translations';
 
+const exchangeRateApiKey = process.env.NEXT_PUBLIC_EXCHANGE_RATE_API_KEY;
+
 // Get currency list with localized names
 export function getCurrencies(locale = 'zh') {
   const currencyTranslations = translations[locale]?.currencies || translations.zh.currencies;
@@ -19,19 +21,30 @@ export function getCurrencies(locale = 'zh') {
   ];
 }
 
-// For backward compatibility - default export with Chinese names
-export const currencies = getCurrencies('zh');
-
 // Fetch exchange rates from API
-export async function fetchExchangeRates(baseCurrency = 'CNY') {
-  try {
-    const response = await fetch(
-      `https://v6.exchangerate-api.com/v6/a6463d646a0ef912f23ef813/latest/${baseCurrency}`
-    );
-    const data = await response.json();
-    return data.conversion_rates;
-  } catch (error) {
-    console.error('Failed to fetch exchange rates:', error);
-    return null;
+export async function fetchExchangeRates(baseCurrency = 'CNY', options = {}) {
+  if (!exchangeRateApiKey) {
+    throw new Error('Missing NEXT_PUBLIC_EXCHANGE_RATE_API_KEY environment variable.');
   }
-} 
+
+  const response = await fetch(
+    `https://v6.exchangerate-api.com/v6/${exchangeRateApiKey}/latest/${baseCurrency}`,
+    options
+  );
+
+  if (!response.ok) {
+    throw new Error(`Exchange rate request failed with status ${response.status}.`);
+  }
+
+  const data = await response.json();
+
+  if (data?.result === 'error') {
+    throw new Error(data['error-type'] || 'Exchange rate API returned an error.');
+  }
+
+  if (!data?.conversion_rates) {
+    throw new Error('Exchange rate API returned an invalid payload.');
+  }
+
+  return data.conversion_rates;
+}

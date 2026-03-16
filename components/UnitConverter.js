@@ -9,7 +9,7 @@ export default function UnitConverter({ unitSystem }) {
     const [toUnit, setToUnit] = useState('');
     const [value, setValue] = useState('');
     const [result, setResult] = useState(null);
-    const { t } = useLanguage();
+    const { t, locale } = useLanguage();
 
     useEffect(() => {
         const units = Object.keys(unitSystem[selectedType].conversions);
@@ -42,7 +42,7 @@ export default function UnitConverter({ unitSystem }) {
     };
 
     const formatNumber = (num) => {
-        return new Intl.NumberFormat('zh-CN', { maximumSignificantDigits: 6 }).format(num);
+        return new Intl.NumberFormat(locale === 'zh' ? 'zh-CN' : 'en-US', { maximumSignificantDigits: 6 }).format(num);
     };
 
     return (
@@ -67,7 +67,9 @@ export default function UnitConverter({ unitSystem }) {
             <div className="space-y-4">
                 <div className="flex items-center gap-2">
                     <div className="flex-1">
+                        <label htmlFor="unit-converter-value" className="sr-only">{t('value')}</label>
                         <input
+                            id="unit-converter-value"
                             type="number"
                             value={value}
                             onChange={(e) => setValue(e.target.value)}
@@ -79,7 +81,9 @@ export default function UnitConverter({ unitSystem }) {
                         />
                     </div>
                     <div className="relative w-24 flex-shrink-0">
+                        <label htmlFor="unit-converter-from" className="sr-only">{locale === 'zh' ? '源单位' : 'From unit'}</label>
                         <select
+                            id="unit-converter-from"
                             value={fromUnit}
                             onChange={(e) => setFromUnit(e.target.value)}
                             className="theme-input w-full appearance-none pl-2 pr-7 font-medium text-sm cursor-pointer"
@@ -95,6 +99,7 @@ export default function UnitConverter({ unitSystem }) {
                 <div className="flex justify-center">
                     <button
                         onClick={handleSwap}
+                        aria-label={locale === 'zh' ? '交换换算单位' : 'Swap units'}
                         className="w-9 h-9 flex items-center justify-center border-theme bg-surface hover:bg-primary transition-all shadow-theme-sm active:translate-x-[2px] active:translate-y-[2px] active:shadow-none rounded-full"
                     >
                         <ArrowUpDown className="w-4 h-4" />
@@ -103,7 +108,9 @@ export default function UnitConverter({ unitSystem }) {
 
                 <div className="flex items-center gap-2">
                     <div className="flex-1">
+                        <label htmlFor="unit-converter-result" className="sr-only">{t('result')}</label>
                         <input
+                            id="unit-converter-result"
                             type="text"
                             value={result !== null ? formatNumber(result) : ''}
                             readOnly
@@ -112,7 +119,9 @@ export default function UnitConverter({ unitSystem }) {
                         />
                     </div>
                     <div className="relative w-24 flex-shrink-0">
+                        <label htmlFor="unit-converter-to" className="sr-only">{locale === 'zh' ? '目标单位' : 'To unit'}</label>
                         <select
+                            id="unit-converter-to"
                             value={toUnit}
                             onChange={(e) => setToUnit(e.target.value)}
                             className="theme-input w-full appearance-none pl-2 pr-7 font-medium text-sm cursor-pointer"
