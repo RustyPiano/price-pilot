@@ -4,7 +4,7 @@ import ProductEditorForm from './ProductEditorForm';
 import PriceComparisonBars from './PriceComparisonBars';
 import SavingsCalculator from './SavingsCalculator';
 import { useLanguage } from '../context/LanguageContext';
-import { enrichProducts, getNumberLocale, groupProductsByUnitType } from '../lib/comparison-math';
+import { enrichProducts, getNumberLocale, getProductDisplayMeta, groupProductsByUnitType } from '../lib/comparison-math';
 import { X, Trophy, TrendingDown, ShoppingCart, Pencil, Sparkles, AlertTriangle, RotateCw, WifiOff } from 'lucide-react';
 
 const getPriceDifferenceDisplay = (sortedProducts) => {
@@ -276,6 +276,7 @@ export default function ProductList({
             )}
 
             {group.products.map((product, index) => {
+              const { quantityLabel } = getProductDisplayMeta(product, locale);
               const isPending = pendingProductIds.includes(product.id);
               const isEditing = editingProductId === product.id;
               const actionsDisabled = (editingProductId !== null && !isEditing) || isPending;
@@ -324,7 +325,10 @@ export default function ProductList({
 
                       <div className="min-w-0 flex-1">
                         <div className="flex flex-wrap items-center gap-2">
-                          <span className="truncate text-sm font-semibold text-foreground sm:text-base">{product.name}</span>
+                          <span className="max-w-full break-words text-sm font-semibold text-foreground sm:text-base">{product.name}</span>
+                          <span className="pill-muted">
+                            {quantityLabel}
+                          </span>
                           {index === 0 && (
                             <span className="pill-brand">
                               <Trophy className="h-3 w-3" />

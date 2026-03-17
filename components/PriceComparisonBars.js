@@ -1,4 +1,4 @@
-import { formatCurrencyAmount } from '../lib/comparison-math';
+import { formatCurrencyAmount, getProductDisplayMeta } from '../lib/comparison-math';
 
 export default function PriceComparisonBars({ group, baseCurrency, locale, t }) {
   if (group.products.length < 2) {
@@ -16,6 +16,7 @@ export default function PriceComparisonBars({ group, baseCurrency, locale, t }) 
 
       <div className="space-y-3">
         {group.products.map((product, index) => {
+          const { quantityLabel } = getProductDisplayMeta(product, locale);
           const width = highestPrice === 0 ? 0 : (product.unitPrice / highestPrice) * 100;
           const barClassName = index === 0
             ? 'is-best'
@@ -26,7 +27,12 @@ export default function PriceComparisonBars({ group, baseCurrency, locale, t }) 
           return (
             <div key={product.id} className="space-y-1.5">
               <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
-                <span className="truncate text-sm font-medium text-foreground">{product.name}</span>
+                <div className="min-w-0 flex flex-wrap items-center gap-2">
+                  <span className="max-w-full break-words text-sm font-medium text-foreground">{product.name}</span>
+                  <span className="pill-muted">
+                    {quantityLabel}
+                  </span>
+                </div>
                 <span className="text-xs leading-5 text-muted sm:whitespace-nowrap">
                   {formatCurrencyAmount(product.unitPrice, baseCurrency, locale)}/{t(`units.${product.baseUnit}`) || product.baseUnit}
                 </span>

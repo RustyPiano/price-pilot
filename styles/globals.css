@@ -269,6 +269,21 @@ textarea {
   font-weight: 600;
 }
 
+.pill-muted {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.22rem 0.52rem;
+  border-radius: 999px;
+  border: 1px solid rgba(91, 100, 114, 0.18);
+  background: rgba(241, 237, 230, 0.92);
+  color: var(--text-secondary);
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
 .rank-chip {
   display: inline-flex;
   align-items: center;

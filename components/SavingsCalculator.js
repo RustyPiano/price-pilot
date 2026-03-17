@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { formatCurrencyAmount } from '../lib/comparison-math';
+import { formatCurrencyAmount, getProductDisplayMeta } from '../lib/comparison-math';
 
 const getDefaultConsumption = (unitType) => unitType === 'piece' ? '10' : '1';
 
@@ -51,8 +51,8 @@ export default function SavingsCalculator({ group, baseCurrency, locale, t }) {
         <p className="text-sm leading-6 text-muted">
           {calculation
             ? t('savingsCalculatorSummary')
-              .replace('{best}', calculation.bestProduct.name)
-              .replace('{worst}', calculation.priciestProduct.name)
+              .replace('{best}', getProductDisplayMeta(calculation.bestProduct, locale).displayName)
+              .replace('{worst}', getProductDisplayMeta(calculation.priciestProduct, locale).displayName)
             : t('savingsCalculatorHint')}
         </p>
       </div>
@@ -102,7 +102,7 @@ export default function SavingsCalculator({ group, baseCurrency, locale, t }) {
           {Number.isFinite(calculation.finishDays) && (
             <p className="text-sm leading-6 text-muted">
               {t('finishUsageHint')
-                .replace('{name}', calculation.bestProduct.name)
+                .replace('{name}', getProductDisplayMeta(calculation.bestProduct, locale).displayName)
                 .replace('{days}', calculation.finishDays.toFixed(1))}
             </p>
           )}

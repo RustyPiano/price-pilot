@@ -14,7 +14,7 @@ import {
   removeComparisonList,
   saveComparisonList,
 } from '../lib/comparison-lists';
-import { enrichProducts, formatCurrencyAmount, getNumberLocale, groupProductsByUnitType } from '../lib/comparison-math';
+import { enrichProducts, formatCurrencyAmount, getNumberLocale, getProductDisplayMeta, groupProductsByUnitType } from '../lib/comparison-math';
 import { Archive, ArrowRight, FolderOpen, Layers3, Plus, Trash2 } from 'lucide-react';
 
 export default function Home() {
@@ -222,7 +222,7 @@ export default function Home() {
           {summaries.length > 0 ? (
             summaries.map((summary) => (
               <div key={`${list.id}-${summary.unitType}`} className="subpanel p-3">
-                <p className="text-sm font-semibold text-foreground">{summary.bestProduct.name}</p>
+                <p className="text-sm font-semibold text-foreground">{getProductDisplayMeta(summary.bestProduct, locale).displayName}</p>
                 <p className="mt-1 text-xs leading-5 text-muted">
                   {(t(`unitTypes.${summary.unitType}`) || summary.unitType)} · {formatCurrencyAmount(summary.bestProduct.unitPrice, list.baseCurrency, locale)}/{t(`units.${summary.baseUnit}`) || summary.baseUnit}
                 </p>
@@ -239,7 +239,7 @@ export default function Home() {
           </span>
           <Link
             href={`/list/${list.id}`}
-            className="btn btn-primary w-full px-4 text-sm sm:w-auto"
+            className="btn btn-primary w-full shrink-0 whitespace-nowrap px-4 text-sm sm:w-auto"
           >
             {t('openList')}
             <ArrowRight className="h-4 w-4" />
