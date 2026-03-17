@@ -1,442 +1,893 @@
-# Price Pilot 改进计划
+# Price Pilot 开发计划
 
-> 基于对项目的深入代码审计和用户体验分析,按优先级排列。
 > 最后更新: 2026-03-17
+> 版本: 0.1.0 -> 目标 1.0.0
 
 ---
 
-## 目录
+## 项目现状摘要
 
-- [现状评估](#现状评估)
-- [第一阶段: 工程底线修复](#第一阶段-工程底线修复)
-- [第二阶段: 核心体验提升](#第二阶段-核心体验提升)
-- [第三阶段: 差异化功能](#第三阶段-差异化功能)
-- [技术演进路线](#技术演进路线)
-- [附录: 完整问题清单](#附录-完整问题清单)
-
----
-
-## 现状评估
-
-### 项目概况
-
-- **定位**: 单价对比工具,帮助用户在购物时快速比较不同商品的单位价格
-- **技术栈**: Next.js 15 (Pages Router) + React 19 + Tailwind CSS
-- **规模**: ~1,300 行 JS, 16 个源文件, 7 个组件
-- **特性**: 多币种汇率转换、中英双语、双主题 (Neobrutalism / Modern Fintech)
-
-### 核心优势
-
-- 痛点真实 — 超市购物比价是高频需求
-- 代码简洁可读,文件组织清晰
-- 双主题系统通过 CSS 变量实现,设计感强
-- i18n 覆盖完整,中英对称
-
-### 核心差距
-
-1. **使用门槛高** — 手动输入步骤多,超市场景下用户没耐心
-2. **缺乏场景记忆** — 用完即弃,无法保存和回顾
-3. **缺乏决策深度** — 只告诉哪个便宜,不告诉能省多少钱
-4. **工程基础有隐患** — 状态 mutation、API 密钥泄露、无错误边界
+| 指标 | 当前值 |
+|------|--------|
+| 源代码行数 | ~5,000+ 行 TS/TSX |
+| 组件数 | 12 个 |
+| 页面数 | 3 个路由 (首页 + 列表详情 + 汇率 API) |
+| 测试覆盖率 | 已接入 Vitest, 整体 81.46%, 核心 `lib/` 模块 86.91% |
+| 类型系统 | 已完成 TypeScript 迁移 (`strict: true`) |
+| 路由方案 | Pages Router (Next.js 15) |
+| 状态管理 | useState + prop drilling + 1 个 Context |
+| 数据持久化 | IndexedDB (主) + localStorage (缓存/偏好) |
+| 主题 | 已支持 light / dark / system 三态 |
+| PWA | manifest 存在但 Service Worker 被主动注销 |
+| 外部依赖 | 6 个生产依赖 + TypeScript / Vitest 开发工具链 |
 
 ---
 
-## 第一阶段: 工程底线修复
+## 阶段一: 短期目标 (1-2 周)
 
-> 目标: 让现有功能稳定可靠,不修这些后续功能都建在沙子上。
-> 预计工时: 1-2 天
+**当前状态**: 已完成
 
-### 1.1 API 密钥安全 [致命]
+**完成说明**:
+- 已完成 1.1 TypeScript 迁移与 `@/` 别名统一
+- 已完成 1.2 核心 `lib/` 单元测试与 coverage 校验
+- 已完成 1.3 暗色模式、系统跟随与手动切换
+- 已完成 1.4 JSON 数据导出 / 导入与冲突处理
+- 已完成 1.5 汇率 API 服务端代理、缓存与客户端去重
 
-- **文件**: `constants/currencies.js:29`
-- **问题**: 汇率 API 密钥 `a6463d646a0ef912f23ef813` 硬编码在源码中,`.env.local` 的占位符从未被使用
-- **修复**:
-  - 改用 `process.env.NEXT_PUBLIC_EXCHANGE_RATE_API_KEY` 读取密钥
-  - 在 `.env.local` 中配置真实密钥
-  - 添加 `.env.example` 文件说明需要配置的环境变量
-  - 考虑将 API 调用移到 Next.js API Route 中,彻底隐藏密钥
+### 1.1 TypeScript 迁移 [已完成]
 
-### 1.2 UnitManager 浅拷贝 Mutation [致命]
+**状态**: 已完成
 
-- **文件**: `components/UnitManager.js:27-28, 42-43`
-- **问题**: `{ ...unitSystem }` 只拷贝顶层,嵌套对象仍是同一引用,添加/删除单位时直接 mutate 原始 prop
-- **修复**:
-  ```js
-  // 方案 A: structuredClone (推荐)
-  const updatedSystem = structuredClone(unitSystem);
+**目标**: 全量迁移为 TypeScript, 为所有数据模型建立类型定义, 消除隐式 any
 
-  // 方案 B: 手动深拷贝
-  const updatedSystem = {
-    ...unitSystem,
-    [selectedType]: {
-      ...unitSystem[selectedType],
-      conversions: {
-        ...unitSystem[selectedType].conversions,
-        [newUnit.code]: { rate: parseFloat(newUnit.rate), displayName: newUnit.displayName }
-      }
-    }
-  };
-  ```
+**优先级**: P0 -- 所有后续开发的基础
 
-### 1.3 localStorage 解析异常捕获 [致命]
+**当前问题**:
+- 纯 JS 无类型无 PropTypes, 数据模型全靠注释和约定
+- 随着代码增长 (已 2800+ 行), 重构和协作风险极高
+- `jsconfig.json` 中定义的 `@/*` 路径别名从未使用, 应在迁移中统一启用
 
-- **文件**: `pages/index.js:25-33`
-- **问题**: `JSON.parse(localStorage.getItem(...))` 无 try/catch,数据损坏时应用白屏
-- **修复**:
-  ```js
-  const safeParse = (key, fallback) => {
-    try {
-      const data = localStorage.getItem(key);
-      return data ? JSON.parse(data) : fallback;
-    } catch (e) {
-      console.error(`Failed to parse localStorage key "${key}":`, e);
-      localStorage.removeItem(key);
-      return fallback;
-    }
-  };
-  ```
+**实施步骤**:
 
-### 1.4 修复 `t` 函数导致的 API 重复请求 [高危]
+1. **安装依赖和配置**
+   ```bash
+   npm install -D typescript @types/react @types/node
+   ```
+   - 将 `jsconfig.json` 替换为 `tsconfig.json`
+   - 配置 `strict: true`, `noUncheckedIndexedAccess: true`
+   - 启用 `@/*` 路径别名并在全量替换相对路径导入
 
-- **文件**: `context/LanguageContext.js:26-33`, `components/ProductList.js:24`
-- **问题**: `t` 函数每次渲染都是新引用,导致 ProductList 的 useEffect 在切换语言时重新请求汇率 API
-- **修复**:
-  - 用 `useCallback` 包裹 `t` 函数,依赖 `locale`
-  - 从 ProductList 的 useEffect 依赖中移除 `t`,改为只依赖 `baseCurrency`
-  ```js
-  // LanguageContext.js
-  const t = useCallback((key) => {
-    const keys = key.split('.');
-    let value = translations[locale];
-    for (const k of keys) {
-      value = value?.[k];
-    }
-    return value || key;
-  }, [locale]);
-  ```
+2. **定义核心类型** -- 新建 `types/index.ts`
+   ```typescript
+   // 产品
+   interface Product {
+     id: string;
+     name: string;
+     price: number;
+     quantity: number;
+     unit: string;
+     currency: string;
+     timestamp: string;
+   }
 
-### 1.5 添加 React Error Boundary [高危]
+   // 富化产品 (计算后)
+   interface EnrichedProduct extends Product {
+     convertedPrice: number;
+     unitPrice: number;
+     standardQuantity: number;
+     unitType: string;
+     baseUnit: string;
+     originalIndex: number;
+   }
 
-- **文件**: 新建 `components/ErrorBoundary.js`, 修改 `pages/_app.js`
-- **问题**: 任何组件运行时错误导致整体白屏
-- **修复**: 添加 Error Boundary 组件,捕获渲染错误并显示友好的错误页面和重试按钮
+   // 产品分组
+   interface ProductGroup {
+     unitType: string;
+     baseUnit: string;
+     products: EnrichedProduct[];
+   }
 
-### 1.6 补全币种符号映射 [高危]
+   // 单位转换配置
+   interface UnitConversion {
+     rate: number;
+     displayName: string;
+   }
 
-- **文件**: `components/AddProductForm.js:21`
-- **问题**: 只映射了 5 种货币符号,其余 6 种显示 `undefined`
-- **修复**:
-  ```js
-  const currencies = {
-    CNY: '¥', USD: '$', EUR: '€', GBP: '£', JPY: '¥',
-    AUD: 'A$', CAD: 'C$', CHF: 'CHF', HKD: 'HK$', NZD: 'NZ$', SGD: 'S$'
-  };
-  ```
+   interface UnitCategory {
+     baseUnit: string;
+     displayName: string;
+     conversions: Record<string, UnitConversion>;
+   }
 
-### 1.7 除零保护 [高危]
+   type UnitSystem = Record<string, UnitCategory>;
 
-- **文件**: `components/ProductList.js:137`
-- **问题**: 最低价为 0 时百分比计算产生 Infinity/NaN
-- **修复**: 添加 `if (sortedProducts[0].unitPrice === 0)` 分支处理
+   // 比较清单
+   interface ComparisonList {
+     id: string;
+     name: string;
+     category: string;
+     products: Product[];
+     baseCurrency: string;
+     unitSystem: UnitSystem;
+     recentUnits: string[];
+     archived: boolean;
+     createdAt: string;
+     updatedAt: string;
+   }
 
-### 1.8 SSR 水合不匹配 [高危]
+   // 分享数据 (序列化用, 剥离运行时字段)
+   type SharedComparisonList = Omit<ComparisonList, 'id' | 'archived' | 'createdAt' | 'updatedAt'>;
 
-- **文件**: `context/LanguageContext.js:7-17`
-- **问题**: 服务端默认 `'zh'`,客户端检测浏览器语言可能为 `'en'`
-- **修复**: 初始值统一为 `'zh'`,浏览器语言检测逻辑放到 useEffect 中且仅在 localStorage 无记录时执行
+   // 汇率映射
+   type ExchangeRates = Record<string, number>;
 
-### 1.9 清理死代码
+   // 语言
+   type Locale = 'zh' | 'en';
+   ```
 
-| 文件 | 问题 |
-|------|------|
-| `pages/index.js:21` | `formRef` 赋值后从未使用,删除 |
-| `pages/index.js:55-57` | `handleUpdateUnits` 中重复的 `localStorage.setItem`,删除 |
-| `constants/currencies.js:23` | `export const currencies` 从未被导入,删除 |
+3. **按依赖顺序迁移文件** (先底层后上层):
+   - 第 1 批: `types/index.ts`, `constants/unitSystem.ts`, `constants/currencies.ts`, `constants/translations.ts`
+   - 第 2 批: `lib/comparison-math.ts`, `lib/comparison-lists.ts`, `lib/share-utils.ts`, `lib/smart-product-parser.ts`
+   - 第 3 批: `context/LanguageContext.tsx`
+   - 第 4 批: 小组件 -- `ErrorBoundary.tsx`, `PageHeader.tsx`, `LanguageToggle.tsx`, `CurrencySelector.tsx`, `PriceComparisonBars.tsx`
+   - 第 5 批: 中组件 -- `SavingsCalculator.tsx`, `UnitConverter.tsx`, `UnitManager.tsx`, `AddProductForm.tsx`, `ProductEditorForm.tsx`
+   - 第 6 批: 大组件 -- `ProductList.tsx`, `ListWorkspace.tsx`
+   - 第 7 批: 页面 -- `pages/_app.tsx`, `pages/_document.tsx`, `pages/index.tsx`, `pages/list/[id].tsx`
 
----
+4. **统一导入路径** -- 全量替换相对路径为 `@/` 别名:
+   ```typescript
+   // Before
+   import { useLanguage } from '../context/LanguageContext';
+   // After
+   import { useLanguage } from '@/context/LanguageContext';
+   ```
 
-## 第二阶段: 核心体验提升
-
-> 目标: 让现有功能从"能用"变成"好用"。
-> 预计工时: 3-5 天
-
-### 2.1 支持编辑商品 [极高价值 / 中等复杂度]
-
-- **当前问题**: 添加后发现信息有误,只能删除重新添加
-- **方案**:
-  - 商品卡片添加编辑按钮 (铅笔图标)
-  - 点击后卡片切换为内联编辑模式,复用 AddProductForm 的字段
-  - 支持 Enter 保存、Esc 取消
-  - 编辑时高亮当前卡片,禁止同时编辑多个
-- **涉及文件**: `components/ProductList.js`, `pages/index.js`
-
-### 2.2 智能分组对比 [极高价值 / 中等复杂度]
-
-- **当前问题**: 重量商品和体积商品混在一起排序,结果无意义
-- **方案**:
-  - 按单位类别 (重量/体积/长度/面积/个数) 自动分组
-  - 每组内独立排序和标记最优
-  - 跨组商品显示提示: "不同单位类别的商品无法直接比较"
-  - 允许用户手动合并/拆分分组
-- **涉及文件**: `components/ProductList.js`, `constants/translations.js`
-
-### 2.3 空状态引导 + 示例数据 [高价值 / 低复杂度]
-
-- **当前问题**: 首次打开是空白列表,不知道该做什么
-- **方案**:
-  - 商品列表为空时显示引导卡片:
-    - 简短说明应用用途
-    - "试试看" 按钮一键加载 2-3 个示例商品 (如: 可乐 500ml ¥3 vs 可乐 2L ¥8)
-    - 轻量动画引导视觉焦点到输入表单
-  - 示例数据根据当前语言显示中文或英文商品名
-- **涉及文件**: `components/ProductList.js`, `constants/translations.js`
-
-### 2.4 删除撤销 (Undo Toast) [高价值 / 低复杂度]
-
-- **当前问题**: 删除后无法恢复,`confirm()` 弹窗在移动端体验差
-- **方案**:
-  - 移除 `confirm()` 弹窗
-  - 删除商品后显示 5 秒倒计时 toast,带"撤销"按钮
-  - 删除操作延迟执行,toast 消失后才真正删除
-  - "清空全部" 同理,但倒计时延长到 8 秒
-- **依赖**: 已使用 `react-hot-toast`,可直接实现
-- **涉及文件**: `pages/index.js`, `components/ProductList.js`
-
-### 2.5 加载状态优化 [中等价值 / 低复杂度]
-
-- **当前问题**: 汇率请求时无反馈,失败后无重试
-- **方案**:
-  - 汇率加载时显示骨架屏 (skeleton),而非空白
-  - 请求失败时显示错误卡片 + 重试按钮
-  - 添加 AbortController 超时 (10 秒)
-  - 缓存上次成功的汇率数据到 localStorage,离线时降级使用
-- **涉及文件**: `components/ProductList.js`, `constants/currencies.js`
-
-### 2.6 输入体验优化 [中等价值 / 低复杂度]
-
-- **方案**:
-  - 数字输入添加 `inputMode="decimal"`,移动端弹出数字键盘
-  - 通过 `onKeyDown` 拦截非法字符 (负号、字母等)
-  - 价格输入前缀显示完整币种符号 (补全全部 11 种)
-  - 快捷单位选择: 根据最近使用的单位排序,常用单位置顶
-- **涉及文件**: `components/AddProductForm.js`
-
-### 2.7 无障碍修复 [中等价值 / 低复杂度]
-
-- 移除 `user-scalable=no`,允许用户缩放
-- 所有图标按钮添加 `aria-label`
-- 表单字段用 `htmlFor`/`id` 关联标签
-- `_document.js` 的 `lang` 属性动态跟随语言设置
-- `formatPrice` / `formatNumber` 使用当前 locale 而非硬编码 `'zh-CN'`
+**验收标准**:
+- [x] `npm run build` 零 TypeScript 错误
+- [x] `strict: true` 模式下无 `any` 类型泄漏 (允许显式 `unknown`)
+- [x] 所有 `lib/` 函数的入参和返回值都有明确类型
+- [x] 所有组件 Props 都有 interface 定义
+- [x] 所有导入使用 `@/` 路径别名
 
 ---
 
-## 第三阶段: 差异化功能
+### 1.2 核心逻辑单元测试 [已完成]
 
-> 目标: 从"工具"变成"值得收藏的应用",解决更深层的用户痛点。
-> 预计工时: 每个功能 2-5 天
+**状态**: 已完成
 
-### 3.1 比价清单 (Comparison Lists) [极高价值]
+**目标**: 为 `lib/` 下 4 个工具模块建立测试, 覆盖关键计算路径
 
-**用户痛点**: 每次购物都要重新输入,无法积累比价经验
+**优先级**: P0 -- 后续重构的安全网
 
-- **功能描述**:
-  - 允许创建多个独立清单 (如"牛奶比价"、"洗衣液比价"、"猫粮比价")
-  - 每个清单独立保存商品、独立排序
-  - 首页展示所有清单的概览卡片,显示最优商品摘要
-  - 支持清单命名、归档、删除
-  - 数据存储从 localStorage 迁移到 IndexedDB
+**当前问题**:
+- 零测试覆盖, 核心计算逻辑 (汇率转换、单价计算、智能解析) 无回归保护
+- 无测试框架配置
 
-- **数据模型**:
-  ```js
-  {
-    id: string,           // UUID
-    name: string,         // "牛奶比价"
-    category: string,     // 可选分类
-    products: Product[],
-    baseCurrency: string,
-    createdAt: string,
-    updatedAt: string
-  }
-  ```
+**实施步骤**:
 
-- **页面结构变化**:
-  ```
-  / (首页)           -> 清单列表概览
-  /list/[id] (详情)  -> 当前的比价功能 (输入 + 排序)
-  ```
+1. **安装 Vitest + Testing Library**
+   ```bash
+   npm install -D vitest @testing-library/react @testing-library/jest-dom jsdom
+   ```
+   在 `package.json` 中添加:
+   ```json
+   {
+     "scripts": {
+       "test": "vitest",
+       "test:run": "vitest run",
+       "test:coverage": "vitest run --coverage"
+     }
+   }
+   ```
+   创建 `vitest.config.ts`:
+   ```typescript
+   import { defineConfig } from 'vitest/config';
+   import path from 'path';
 
-### 3.2 节省金额计算器 [极高价值]
+   export default defineConfig({
+     test: {
+       environment: 'jsdom',
+       globals: true,
+       setupFiles: ['./tests/setup.ts'],
+     },
+     resolve: {
+       alias: { '@': path.resolve(__dirname, '.') },
+     },
+   });
+   ```
 
-**用户痛点**: 知道哪个便宜,但不知道便宜多少、值不值得买大包装
+2. **测试 `lib/comparison-math.ts`** -- `tests/lib/comparison-math.test.ts`
+   - `enrichProducts()`:
+     - 同币种、同单位类型的基本转换
+     - 跨币种转换 (CNY -> USD)
+     - 跨单位转换 (g -> kg, ml -> l)
+     - 缺失汇率时的容错 (rate 默认为 1)
+     - quantity 或 price 为 0 时的除零保护
+     - 未知单位的降级处理
+   - `groupProductsByUnitType()`:
+     - 单类型分组: 权重类产品正确分到一组, 组内按 unitPrice 升序
+     - 多类型分组: weight + volume 分为两组
+     - 空输入返回空数组
+   - `formatCurrencyAmount()`:
+     - 各币种格式正确 (CNY: ¥1,234.56, USD: $1,234.56, JPY: ¥1,235)
+     - zh-CN 和 en-US locale 输出差异
+   - `formatProductQuantityLabel()`:
+     - 中文 locale 输出 "500毫升"
+     - 英文 locale 输出 "500 mL"
 
-- **功能描述**:
-  - 比价结果下方增加"省钱计算"面板
-  - 用户输入月消耗量 (如: 每月喝 10 瓶牛奶)
-  - 自动计算: "选择最优商品,每月可省 ¥XX,每年可省 ¥XXX"
-  - 大包装 vs 小包装的单位差价可视化
-  - 考虑保质期因素: "大包装更便宜,但需在 X 天内用完"
+3. **测试 `lib/smart-product-parser.ts`** -- `tests/lib/smart-product-parser.test.ts`
+   - 中文输入: `"可乐 500ml 3.5元"` -> `{ name: "可乐", price: 3.5, quantity: 500, unit: "ml", currency: "CNY" }`
+   - 英文输入: `"Cola 500ml $3.5"` -> `{ name: "Cola", price: 3.5, quantity: 500, unit: "ml", currency: "USD" }`
+   - 口语价格: `"牛奶 1L 3块5"` -> price: 3.5
+   - 只有价格: `"$9.99"` -> `{ price: 9.99, currency: "USD" }`
+   - 无法解析: `"hello"` -> 返回 null 或部分填充
+   - 多币种符号: `"€12.5"`, `"£8"`, `"¥100"` 正确识别
+   - 多单位: `"2kg"`, `"500g"`, `"1.5L"`, `"3个"` 正确提取
 
-- **展示方式**:
-  ```
-  ┌─────────────────────────────────────────┐
-  │  💡 选择 [商品A] 而不是 [商品C]          │
-  │  每月消耗: [  10  ] 瓶                   │
-  │  每月节省: ¥45.00                        │
-  │  每年节省: ¥540.00                       │
-  │  ████████████████░░░░░ 节省 38%          │
-  └─────────────────────────────────────────┘
-  ```
+4. **测试 `lib/share-utils.ts`** -- `tests/lib/share-utils.test.ts`
+   - 编码后解码恢复原始数据 (round-trip)
+   - 包含中文字符的列表名正确编码
+   - 包含特殊字符 (引号、换行) 的产品名处理
+   - 解码损坏的 Base64 字符串时不崩溃
 
-### 3.3 比价结果可视化 [高价值]
+5. **测试 `lib/comparison-lists.ts`** -- `tests/lib/comparison-lists.test.ts`
+   - `normalizeProduct()`: 缺失 id/timestamp 时自动补全
+   - `normalizeComparisonList()`: 缺失字段的默认值填充
+   - `buildEntityId()`: 返回值格式正确
+   - `safeParseLocalStorage()`: 损坏 JSON 不崩溃, 返回 fallback
+   - IndexedDB CRUD: 需要 `fake-indexeddb` mock
 
-**用户痛点**: 纯数字列表缺乏直观冲击力
-
-- **功能描述**:
-  - 水平条形图展示各商品单价对比
-  - 最优商品用绿色标注,最差用红色
-  - 条形宽度按比例缩放,直观显示价格差距
-  - 可选: 饼图展示各商品价格占比
-
-- **技术选型**: 纯 CSS 实现简单条形图,不引入图表库,保持轻量
-
-### 3.4 智能输入 (降低使用门槛) [高价值]
-
-**用户痛点**: 在超市手动输入名称、价格、数量、单位太麻烦
-
-- **功能 A: 自然语言解析**
-  - 输入 "500ml 可乐 3.5元" 或 "可乐 3块5 500毫升"
-  - 自动解析出: 名称=可乐, 价格=3.5, 数量=500, 单位=ml, 货币=CNY
-  - 前端正则匹配,无需后端
-
-- **功能 B: 拍照识别价签** (长期)
-  - 调用手机摄像头拍摄超市价签
-  - OCR 识别价格和规格信息
-  - 自动填入表单
-  - 可使用 Web OCR API (如 Tesseract.js 前端方案) 或云端 API
-
-### 3.5 分享功能 [高价值]
-
-**用户痛点**: 比价结果无法分享给家人朋友
-
-- **方案 A: 截图分享**
-  - 使用 `html2canvas` 将比价结果渲染为图片
-  - 支持保存到相册或直接分享
-
-- **方案 B: 链接分享**
-  - 将比价数据编码到 URL 参数中 (base64 压缩)
-  - 接收者打开链接直接看到比价结果
-  - 无需后端,数据全在 URL 中
-
-### 3.6 PWA 支持 [高价值]
-
-**用户痛点**: 每次都要打开浏览器输入网址
-
-- **功能描述**:
-  - 添加 `manifest.json`,支持"添加到主屏幕"
-  - 添加 Service Worker,缓存静态资源
-  - 离线时使用缓存的汇率数据
-  - 启动画面和图标设计
-- **技术**: Next.js 的 `next-pwa` 插件可快速实现
-
-### 3.7 历史记录与价格趋势 [中高价值]
-
-- 自动保存每次比价时间和结果
-- 同一商品的价格变化曲线
-- "上次买牛奶是 3 周前,当时最优价是 ¥X"
-- 数据存储在 IndexedDB 中
+**验收标准**:
+- [x] `npm run test:run` 全部通过
+- [x] `lib/` 下 4 个模块各有独立测试文件
+- [x] 核心函数 (`enrichProducts`, `parseSmartProductInput`, `encode/decode`) 测试覆盖率 > 90%
+- [x] CI 可运行 (无浏览器依赖)
 
 ---
 
-## 技术演进路线
+### 1.3 暗色模式 [已完成]
 
-### 短期 (当前 -> 1个月)
+**状态**: 已完成
 
-- 保持纯前端架构
-- 用 IndexedDB 替代 localStorage (支持比价清单等结构化数据)
-- 引入 TypeScript (渐进式迁移,新文件用 TS 写)
-- 添加基础测试 (Jest + React Testing Library)
-- 保持 Pages Router
+**目标**: 实现系统跟随 + 手动切换的暗色模式, 复用现有 CSS Variables 体系
 
-### 中期 (1-3 个月)
+**优先级**: P0 -- 低成本高感知价值
 
-- 迁移到 App Router (利用 Server Components、Streaming 等特性)
-- 添加 PWA 支持
-- 引入 Zustand 或 Jotai 替代手动 Context + prop drilling
-- 添加 E2E 测试 (Playwright)
-- CI/CD 配置 (GitHub Actions)
+**当前问题**:
+- `globals.css` 已有完整的 CSS Variables 体系, 但只定义了浅色主题
+- `html` 硬编码 `color-scheme: light`
+- 无主题切换 UI
 
-### 长期 (3 个月+,如果产品方向验证成功)
+**实施步骤**:
 
-- 后端服务 (Supabase / Firebase,支持用户系统)
-- 商品价格众筹数据库
-- 跨设备数据同步
-- 优惠提醒推送
+1. **定义暗色变量集** -- 在 `globals.css` 中添加:
+   ```css
+   :root[data-theme="dark"] {
+     --canvas: #0f1117;
+     --surface: #1a1d27;
+     --surface-muted: #252833;
+     --text-primary: #e8eaed;
+     --text-secondary: #9ba3b0;
+     --border: #2e3340;
+     --brand: #2dd4bf;
+     --brand-strong: #5eead4;
+     --success: #34d399;
+     --warning: #fbbf24;
+     --danger: #f87171;
+     --focus-ring: rgba(45, 212, 191, 0.3);
+     --shadow-sm: 0 12px 24px -22px rgba(0, 0, 0, 0.5);
+     --shadow-base: 0 18px 40px -28px rgba(0, 0, 0, 0.6);
+     --shadow-lg: 0 24px 52px -34px rgba(0, 0, 0, 0.7);
+     color-scheme: dark;
+   }
+   ```
+   - 同时更新 `body` 背景渐变的品牌色透明度以适配暗色
+   - 检查所有组件中硬编码的颜色值 (如 `bg-white`, `text-gray-*`), 替换为语义化 token
+
+2. **创建 ThemeContext** -- `context/ThemeContext.tsx`
+   ```typescript
+   type Theme = 'light' | 'dark' | 'system';
+   ```
+   - 默认 `'system'`, 读取 `localStorage.theme` 恢复用户选择
+   - 监听 `window.matchMedia('(prefers-color-scheme: dark)')` 变化
+   - 在 `<html>` 上设置 `data-theme` 属性
+   - 提供 `theme`, `resolvedTheme`, `setTheme()` 给消费者
+
+3. **防止闪烁** -- 在 `_document.tsx` 的 `<Head>` 中注入内联脚本:
+   ```html
+   <script dangerouslySetInnerHTML={{ __html: `
+     (function() {
+       var t = localStorage.getItem('theme');
+       var d = document.documentElement;
+       if (t === 'dark' || (!t && matchMedia('(prefers-color-scheme:dark)').matches)) {
+         d.setAttribute('data-theme', 'dark');
+       }
+     })();
+   ` }} />
+   ```
+
+4. **主题切换 UI** -- 修改 `PageHeader.tsx`
+   - 在语言切换按钮旁添加主题切换图标按钮
+   - 三态循环: system -> light -> dark -> system
+   - 使用 `Sun` / `Moon` / `Monitor` 图标 (lucide-react 已有)
+
+5. **审查所有组件** -- 排查硬编码颜色:
+   - 搜索 `bg-white`, `bg-gray-`, `text-gray-`, `border-gray-`, `bg-slate-` 等 Tailwind 类名
+   - 替换为 `bg-surface`, `text-foreground`, `text-muted`, `border-theme` 等语义化类名
+   - 检查 `globals.css` 中的组件类, 确保全部使用 `var(--*)` 而非硬编码色值
+   - 更新 `manifest.json` 的 `theme_color` 为动态值 (通过 meta tag)
+
+6. **更新 `_app.tsx` 的 Toaster 样式** -- 已使用 CSS Variables, 无需修改
+
+**涉及文件**:
+- `styles/globals.css` -- 添加暗色变量集, 审查硬编码色值
+- `context/ThemeContext.tsx` -- 新建
+- `pages/_document.tsx` -- 注入防闪烁脚本
+- `pages/_app.tsx` -- 包裹 ThemeProvider
+- `components/PageHeader.tsx` -- 添加切换按钮
+- 所有使用硬编码 Tailwind 颜色类的组件文件
+- `public/manifest.json` -- 审查 `theme_color`
+
+**验收标准**:
+- [x] 首次加载根据系统偏好自动选择主题, 无闪烁 (FOUC)
+- [x] 手动切换后刷新页面保持选择
+- [x] 所有组件在暗色下无可读性问题 (文字/背景对比度)
+- [x] toast / modal / skeleton 等 overlay 元素暗色适配
+- [x] `prefers-color-scheme` 变化时自动跟随 (system 模式下)
+- [x] bar chart 颜色 (best/mid/worst) 暗色下依然清晰可辨
 
 ---
 
-## 附录: 完整问题清单
+### 1.4 数据备份与恢复 (JSON 导出/导入) [已完成]
 
-### 致命 (Critical)
+**状态**: 已完成
 
-| # | 问题 | 文件:行号 |
-|---|------|-----------|
-| C1 | API 密钥硬编码在源码中 | `constants/currencies.js:29` |
-| C2 | UnitManager 浅拷贝导致 prop mutation | `components/UnitManager.js:27-28, 42-43` |
-| C3 | localStorage JSON.parse 无异常捕获 | `pages/index.js:25-33` |
+**目标**: 允许用户将所有数据导出为 JSON 文件, 以及从 JSON 文件恢复数据
 
-### 高危 (High)
+**优先级**: P0 -- 用户数据仅存浏览器, 这是最大的用户焦虑点
 
-| # | 问题 | 文件:行号 |
-|---|------|-----------|
-| H1 | `t` 函数未 memoize 导致 API 重复请求 | `context/LanguageContext.js:26`, `components/ProductList.js:24` |
-| H2 | 币种符号映射不完整 (5/11) | `components/AddProductForm.js:21` |
-| H3 | 除零风险 (最低价为 0) | `components/ProductList.js:137` |
-| H4 | SSR 水合不匹配 (语言检测) | `context/LanguageContext.js:7-17` |
-| H5 | 无 React Error Boundary | `pages/_app.js` |
+**当前问题**:
+- 数据完全存在 IndexedDB, 清除浏览器数据即丢失一切
+- 已有 `share-utils.ts` 的 Base64 编码方案, 但仅限单个列表分享, 不支持全量备份
+- 无法跨浏览器 / 跨设备迁移数据
 
-### 中等 (Medium)
+**实施步骤**:
 
-| # | 问题 | 文件:行号 |
-|---|------|-----------|
-| M1 | HTML lang 属性硬编码 zh-cn | `pages/_document.js:5` |
-| M2 | user-scalable=no 禁用缩放 (WCAG 违规) | `pages/index.js:73` |
-| M3 | 图标按钮缺少 aria-label | 多处 |
-| M4 | 表单字段未关联 label | `components/AddProductForm.js` |
-| M5 | formatPrice/formatNumber 硬编码 zh-CN | `components/ProductList.js:54`, `components/UnitConverter.js:45` |
-| M6 | 硬编码颜色不随主题变化 | `components/ProductList.js:74,105,113,116,132` |
-| M7 | API 请求无超时/无响应校验/无重试 | `constants/currencies.js:28-32` |
-| M8 | formRef 死代码 | `pages/index.js:21` |
-| M9 | handleUpdateUnits 重复写 localStorage | `pages/index.js:55-57` |
-| M10 | `export const currencies` 死代码 | `constants/currencies.js:23` |
-| M11 | 无 TypeScript 无 PropTypes | 全局 |
-| M12 | 零测试覆盖 | 全局 |
+1. **导出功能** -- `lib/data-backup.ts`
+   ```typescript
+   interface BackupData {
+     version: 1;
+     exportedAt: string;        // ISO 8601
+     app: 'price-pilot';
+     lists: ComparisonList[];
+   }
 
-### 低 (Low)
+   async function exportAllData(): Promise<BackupData> {
+     const lists = await getAllComparisonLists();
+     return {
+       version: 1,
+       app: 'price-pilot',
+       exportedAt: new Date().toISOString(),
+       lists,
+     };
+   }
 
-| # | 问题 | 文件:行号 |
-|---|------|-----------|
-| L1 | "箱" (case) 换算率为 1,语义不正确 | `constants/unitSystem.js:55` |
-| L2 | toggleTheme 未用 useCallback | `context/ThemeContext.js` |
-| L3 | 主题切换可能有 FOIT (Flash of Incorrect Theme) | `context/ThemeContext.js:18` |
-| L4 | Inter 字体只加载 Latin 子集,中文回退系统字体 | `pages/_app.js:6` |
-| L5 | UnitConverter swap 按钮 rounded-full 与全局不一致 | `components/UnitConverter.js:98` |
-| L6 | Tailwind 颜色 scale 映射到同一变量无实际渐变 | `tailwind.config.mjs:15-18` |
-| L7 | 无暗色模式 | `styles/globals.css` |
+   function downloadAsJson(data: BackupData): void {
+     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+     const url = URL.createObjectURL(blob);
+     const a = document.createElement('a');
+     a.href = url;
+     a.download = `price-pilot-backup-${new Date().toISOString().slice(0, 10)}.json`;
+     a.click();
+     URL.revokeObjectURL(url);
+   }
+   ```
+
+2. **导入功能** -- `lib/data-backup.ts`
+   ```typescript
+   interface ImportResult {
+     imported: number;
+     skipped: number;
+     errors: string[];
+   }
+
+   async function importFromJson(file: File): Promise<ImportResult> {
+     const text = await file.text();
+     const data = JSON.parse(text);
+     // 1. 验证 data.app === 'price-pilot'
+     // 2. 验证 data.version 支持的版本
+     // 3. 验证 data.lists 是数组
+     // 4. 逐条 normalizeComparisonList + saveComparisonList
+     // 5. 返回导入统计
+   }
+   ```
+
+3. **导入策略选择 UI** -- 导入时需让用户选择冲突处理策略:
+   - **合并** (默认): 已存在的列表跳过, 只导入新列表 (按 id 判重)
+   - **覆盖**: 已存在的列表用导入数据覆盖
+   - **全部导入**: 为冲突列表生成新 id, 全部保留
+
+4. **UI 入口** -- 在首页 (`pages/index.tsx`) 添加:
+   - 顶部操作栏增加"导出数据"按钮 (`Download` 图标)
+   - "导入数据"按钮 (`Upload` 图标), 点击触发隐藏的 `<input type="file" accept=".json">`
+   - 导入完成后 toast 提示统计信息, 刷新列表
+
+5. **数据校验** -- `lib/data-backup.ts`
+   - 使用版本号 `version: 1` 进行前向兼容
+   - 校验每个 list 必须有 `products` 数组
+   - 校验每个 product 必须有 `price`, `quantity`, `unit` 字段
+   - 无效数据跳过并记录到 `errors` 数组
+
+**涉及文件**:
+- `lib/data-backup.ts` -- 新建
+- `pages/index.tsx` -- 添加导出/导入按钮和交互逻辑
+- `constants/translations.ts` -- 添加导出/导入相关翻译 key
+
+**验收标准**:
+- [x] 点击"导出"立即下载包含所有列表的 JSON 文件
+- [x] JSON 文件格式清晰, 人类可读 (缩进格式化)
+- [x] 导入 JSON 文件后数据正确恢复
+- [x] 导入损坏/非法 JSON 时不崩溃, 显示友好错误提示
+- [x] 导入时正确处理 id 冲突
+- [x] 空数据库导出的 JSON 可以导入到另一个浏览器并恢复一致
+- [x] 有对应的单元测试覆盖 export/import 逻辑
 
 ---
 
-## 实施建议
+### 1.5 API Key 安全代理 [已完成]
 
-**如果只能做一件事**: 优先实现 **比价清单 + 节省金额计算** (3.1 + 3.2)。这两个功能组合能让工具从"用完就关"变成"值得收藏",是产品价值跃升的关键。
+**状态**: 已完成
 
-**推荐实施顺序**:
-1. 第一阶段全部 (1-2 天) — 扫清工程隐患
-2. 2.3 空状态引导 (0.5 天) — 立竿见影提升首次体验
-3. 2.4 删除撤销 (0.5 天) — 消除操作焦虑
-4. 2.1 支持编辑 (1 天) — 核心流程补完
-5. 2.2 智能分组 (1 天) — 比价结果更准确
-6. 3.1 比价清单 (2-3 天) — 产品价值飞跃
-7. 3.2 节省金额 (1-2 天) — 决策深度提升
-8. 3.6 PWA 支持 (1 天) — 移动端体验闭环
-9. 其余功能按需推进
+**目标**: 将汇率 API 调用从客户端移至 Next.js API Route, 避免 API Key 暴露
+
+**优先级**: P0 -- 安全隐患
+
+**当前问题**:
+- `NEXT_PUBLIC_EXCHANGE_RATE_API_KEY` 使用 `NEXT_PUBLIC_` 前缀, 直接暴露在浏览器 bundle 中
+- `constants/currencies.js` 在客户端直接调用 `https://v6.exchangerate-api.com/v6/{key}/latest/{base}`
+- 任何人打开 DevTools 即可提取 key 并滥用
+- 首页 `buildSummaries` 为每个列表独立 fetch 汇率, 无去重
+
+**实施步骤**:
+
+1. **创建 API Route** -- `pages/api/exchange-rates.ts`
+   ```typescript
+   // GET /api/exchange-rates?base=CNY
+   export default async function handler(req, res) {
+     const { base } = req.query;
+     // 1. 验证 base 是支持的币种
+     // 2. 检查服务端内存缓存 (同一 base 10分钟内不重复请求)
+     // 3. 用服务端环境变量 EXCHANGE_RATE_API_KEY (无 NEXT_PUBLIC_ 前缀) 调用 API
+     // 4. 缓存结果
+     // 5. 返回 { rates: Record<string, number>, cachedAt: string }
+   }
+   ```
+
+2. **服务端缓存层** -- 内存缓存 (Map):
+   ```typescript
+   const cache = new Map<string, { rates: ExchangeRates; cachedAt: number }>();
+   const CACHE_TTL = 10 * 60 * 1000; // 10 分钟
+   ```
+   - 同一 `baseCurrency` 在 TTL 内直接返回缓存
+   - 消除客户端重复请求问题 (多个列表 -> 一次后端请求)
+
+3. **修改环境变量**:
+   - `.env.local`: 将 `NEXT_PUBLIC_EXCHANGE_RATE_API_KEY` 重命名为 `EXCHANGE_RATE_API_KEY`
+   - `.env.example`: 同步更新
+   - API Route 中使用 `process.env.EXCHANGE_RATE_API_KEY`
+
+4. **修改客户端调用** -- `constants/currencies.ts`:
+   ```typescript
+   export async function fetchExchangeRates(baseCurrency = 'CNY', options = {}) {
+     const response = await fetch(`/api/exchange-rates?base=${baseCurrency}`, options);
+     if (!response.ok) throw new Error(`Exchange rate request failed: ${response.status}`);
+     const data = await response.json();
+     return data.rates;
+   }
+   ```
+   - 删除 `NEXT_PUBLIC_EXCHANGE_RATE_API_KEY` 引用
+   - 客户端不再直接调用外部 API
+
+5. **客户端请求去重** -- 在 `constants/currencies.ts` 中添加:
+   ```typescript
+   const inflight = new Map<string, Promise<ExchangeRates>>();
+
+   export async function fetchExchangeRates(baseCurrency = 'CNY', options = {}) {
+     const key = baseCurrency;
+     if (inflight.has(key)) return inflight.get(key)!;
+     const promise = fetchFromApi(baseCurrency, options).finally(() => inflight.delete(key));
+     inflight.set(key, promise);
+     return promise;
+   }
+   ```
+   解决首页多个列表同时请求同一币种的问题。
+
+**涉及文件**:
+- `pages/api/exchange-rates.ts` -- 新建
+- `constants/currencies.ts` -- 修改 `fetchExchangeRates` 改调内部 API, 添加去重
+- `.env.local` -- 重命名变量
+- `.env.example` -- 同步更新
+
+**验收标准**:
+- [x] 浏览器 bundle 中不再包含 API Key (搜索 build 产物确认)
+- [x] `process.env.EXCHANGE_RATE_API_KEY` 仅在服务端可用
+- [x] `/api/exchange-rates?base=CNY` 正确返回汇率数据
+- [x] 10 分钟内同一 base 的重复请求命中服务端缓存
+- [x] 客户端同时发起多个相同 base 的请求只触发一次网络请求
+- [x] 客户端的 localStorage 缓存 fallback 机制继续正常工作
+- [x] 无效 base 参数返回 400 错误
+
+---
+
+## 阶段二: 中期目标 (1-2 月)
+
+**当前状态**: 进行中
+
+**完成说明**:
+- 已完成 2.1 `ListWorkspace` 组件拆分、Hook 抽离与测试补充
+- 2.2 App Router 迁移待开始
+- 2.3 PWA 离线支持待开始
+- 2.4 价格历史与趋势待开始
+
+### 2.1 ListWorkspace 组件拆分
+
+**状态**: 已完成
+
+**目标**: 将 662 行的 `ListWorkspace.tsx` 拆分为多个自定义 Hook 和子组件, 提升可维护性
+
+**优先级**: P1 -- 功能扩展的前提
+
+**当前问题**:
+- `ListWorkspace.tsx` 承担了 7 种职责: 状态管理、产品 CRUD、undo/delete、分享链接、分享图片、面板管理、元数据编辑
+- 所有逻辑集中在一个函数组件中, 每次修改都需通读全文
+- `UndoToast` 子组件内联在同文件中
+
+**拆分方案**:
+
+1. **自定义 Hooks** (从 ListWorkspace 提取):
+
+   | Hook | 职责 | 提取的状态/逻辑 |
+   |------|------|------------------|
+   | `useListState(list, onSave)` | 列表状态管理 | `listRef`, `pushListUpdate()`, 产品增删改、元数据更新 |
+   | `useUndoDelete(pushUpdate)` | 撤销删除 | `pendingDeleteRef`, `pendingClearRef`, `handleDeleteProduct()`, `handleClearAll()`, undo toast 逻辑, cleanup |
+   | `useShareLink(list)` | 分享链接 | `encodeSharedComparisonList`, clipboard 写入, fallback modal 状态 |
+   | `useShareImage(resultRef)` | 分享图片 | `html2canvas` 动态导入, canvas 生成, blob URL, preview modal 状态 |
+
+   Hook 文件位置: `hooks/`
+
+2. **子组件提取**:
+
+   | 组件 | 来源 | 说明 |
+   |------|------|------|
+   | `UndoToast.tsx` | ListWorkspace 内联组件 | 移至 `components/UndoToast.tsx` |
+   | `ShareLinkModal.tsx` | ListWorkspace 中的 modal 渲染 | 分享链接 fallback modal |
+   | `ShareImageModal.tsx` | ListWorkspace 中的 modal 渲染 | 图片预览 + 下载 modal |
+   | `ListMetadataEditor.tsx` | ListWorkspace 中的名称/类别编辑区 | inline 编辑 + onBlur 保存 |
+   | `ToolPanel.tsx` | ListWorkspace 中的面板切换逻辑 | UnitManager/UnitConverter 的容器 |
+
+3. **重构后 ListWorkspace 结构**:
+   ```tsx
+   function ListWorkspace({ comparisonList, onSaveList }: Props) {
+     const { locale, t } = useLanguage();
+     const { list, addProduct, updateProduct, removeProduct, updateMetadata, updateCurrency, updateUnits } = useListState(comparisonList, onSaveList);
+     const { handleDelete, handleClearAll, pendingProductIds } = useUndoDelete(/* ... */);
+     const { shareLink, shareLinkModal } = useShareLink(list);
+     const { shareImage, shareImageModal } = useShareImage(resultRef);
+
+     return (
+       <>
+         <ListMetadataEditor ... />
+         <ToolPanel ... />
+         <AddProductForm ... />
+         <ProductList ... />
+         {shareLinkModal}
+         {shareImageModal}
+       </>
+     );
+   }
+   ```
+
+**验收标准**:
+- [x] `ListWorkspace.tsx` 缩减到 150 行以内
+- [x] 每个 Hook 有独立的测试文件
+- [x] 所有现有功能不变 (undo、分享、编辑等)
+- [x] 无新增 prop drilling -- Hook 封装内部状态
+
+---
+
+### 2.2 App Router 迁移
+
+**目标**: 从 Pages Router 迁移到 App Router, 采用 React Server Components
+
+**优先级**: P1 -- 架构现代化
+
+**当前问题**:
+- Next.js 15 但仍用 Pages Router, 错失 RSC、Streaming SSR、改进的 layout/loading/error 模式
+- 当前零 SSR 数据获取 (无 `getServerSideProps`), 纯客户端渲染
+- 仅 2 个页面 + 2 个框架文件, 迁移成本可控
+
+**迁移方案**:
+
+1. **目录结构规划**:
+   ```
+   app/
+   ├── layout.tsx          # 替代 _app.tsx: ErrorBoundary, ThemeProvider, LanguageProvider, Toaster, Head
+   ├── page.tsx             # 替代 pages/index.tsx: 首页
+   ├── loading.tsx          # 首页 skeleton loading
+   ├── error.tsx            # 首页错误处理
+   ├── not-found.tsx        # 404 页面
+   ├── list/
+   │   └── [id]/
+   │       ├── page.tsx     # 替代 pages/list/[id].tsx
+   │       ├── loading.tsx  # 列表详情 skeleton
+   │       └── error.tsx    # 列表详情错误处理
+   └── api/
+       └── exchange-rates/
+           └── route.ts     # 替代 pages/api/exchange-rates.ts
+   ```
+
+2. **迁移步骤**:
+
+   **Step 1: 共存阶段**
+   - 创建 `app/layout.tsx`, 迁移 `_app.tsx` 中的 provider 包裹和 Head 配置
+   - 保留 `pages/` 目录, 确认 Next.js 共存模式正常工作
+   - 验证两个路由系统不冲突
+
+   **Step 2: 迁移首页**
+   - 创建 `app/page.tsx` (client component, `'use client'`)
+   - 迁移 `pages/index.tsx` 的逻辑
+   - 创建 `app/loading.tsx` -- 首页骨架屏
+   - 创建 `app/error.tsx` -- 首页错误边界 (替代全局 ErrorBoundary 的部分职责)
+   - 测试通过后删除 `pages/index.tsx`
+
+   **Step 3: 迁移列表页**
+   - 创建 `app/list/[id]/page.tsx` (client component)
+   - 迁移分享链接解码逻辑 (`?share=` 参数处理)
+   - 创建 `app/list/[id]/loading.tsx` 和 `error.tsx`
+   - 测试通过后删除 `pages/list/[id].tsx`
+
+   **Step 4: 迁移 API Route**
+   - 创建 `app/api/exchange-rates/route.ts` (使用 Route Handlers)
+   - 测试通过后删除 `pages/api/exchange-rates.ts`
+
+   **Step 5: 清理**
+   - 删除 `pages/` 目录
+   - 删除 `pages/_document.tsx` (逻辑移入 `app/layout.tsx`)
+   - 更新 `next.config.mjs` 如有需要
+
+3. **Server Component 机会**:
+   - `layout.tsx` 作为 Server Component -- 静态 shell, provider 通过独立 client component 包裹
+   - 首页和列表页当前高度交互, 短期内保持 `'use client'`
+   - 后续可将 metadata (SEO tags) 通过 `generateMetadata()` 服务端生成
+
+4. **改进项**:
+   - 用 `loading.tsx` 替代组件内手动骨架屏逻辑
+   - 用 `error.tsx` 提供路由级错误边界, 替代单一全局 ErrorBoundary
+   - 用 `not-found.tsx` 处理 404
+   - 用 `generateMetadata()` 统一 SEO meta 管理
+
+**注意事项**:
+- `LanguageContext` 和 `ThemeContext` 是 client-side Context, 需要在 `app/layout.tsx` 中通过一个 `'use client'` 的 Providers 组件包裹
+- IndexedDB 操作仅限浏览器, 所有数据获取逻辑保持 client-side
+- `react-hot-toast` 的 `Toaster` 是 client component
+- 确保 `?share=` 查询参数在 App Router 下正确获取 (使用 `useSearchParams()`)
+
+**涉及文件**:
+- `app/` 目录 -- 全新创建
+- `pages/` 目录 -- 最终删除
+- `components/Providers.tsx` -- 新建, 封装 client-side providers
+- `next.config.mjs` -- 可能需要更新
+
+**验收标准**:
+- [x] 所有页面在 App Router 下功能一致
+- [x] `loading.tsx` 提供路由级 loading UI
+- [x] `error.tsx` 提供路由级错误恢复
+- [x] SEO meta tags 通过 `generateMetadata()` 生成
+- [x] 分享链接 (`?share=`) 正常工作
+- [x] `pages/` 目录完全移除
+- [x] `npm run build` 零错误
+
+---
+
+### 2.3 修复 PWA 离线支持
+
+**目标**: 恢复 Service Worker 功能, 实现完整的离线体验
+
+**优先级**: P1 -- 超市等信号差场景的刚需
+
+**当前问题**:
+- `public/sw.js` 存在 55 行完整的 SW 代码 (network-first + cache fallback)
+- `_app.js` (迁移后为 `layout.tsx`) 中主动注销所有 SW 并清除缓存
+- PWA manifest 已配置, "添加到主屏幕" 可用, 但无离线能力
+- SW 注册/注销代码是死代码
+
+**实施步骤**:
+
+1. **采用 next-pwa 或 Serwist** -- 推荐 [Serwist](https://serwist.pages.dev/) (next-pwa 的活跃维护 fork):
+   ```bash
+   npm install -D @serwist/next
+   npm install @serwist/sw
+   ```
+
+2. **配置 Serwist** -- 更新 `next.config.mjs`:
+   ```typescript
+   import withSerwist from '@serwist/next';
+
+   export default withSerwist({
+     swSrc: 'app/sw.ts',           // SW 源文件
+     swDest: 'public/sw.js',       // 构建输出
+     cacheOnNavigation: true,
+     reloadOnOnline: true,
+   })({
+     reactStrictMode: true,
+   });
+   ```
+
+3. **编写 Service Worker** -- `app/sw.ts`:
+   ```typescript
+   import { defaultCache } from '@serwist/next/worker';
+   import { Serwist } from 'serwist';
+
+   const serwist = new Serwist({
+     precacheEntries: self.__SW_MANIFEST,
+     skipWaiting: true,
+     clientsClaim: true,
+     navigationPreload: true,
+     runtimeCaching: defaultCache,
+   });
+
+   serwist.addEventListeners();
+   ```
+
+4. **删除旧代码**:
+   - 删除 `public/sw.js` (现在由 Serwist 构建时自动生成)
+   - 删除 `_app.js` / `layout.tsx` 中的 SW 注销和缓存清除代码
+
+5. **注册 SW** -- 在 `layout.tsx` 或 Providers 中:
+   ```typescript
+   useEffect(() => {
+     if ('serviceWorker' in navigator) {
+       navigator.serviceWorker.register('/sw.js');
+     }
+   }, []);
+   ```
+
+6. **离线 fallback 页面** -- `app/offline/page.tsx`:
+   - 简洁的离线提示页
+   - 说明"数据已保存在本地, 恢复网络后可同步汇率"
+   - 提供"查看已保存列表"的入口
+
+7. **缓存策略配置**:
+   | 资源类型 | 策略 | 说明 |
+   |----------|------|------|
+   | 页面 HTML | NetworkFirst | 优先最新, 离线时用缓存 |
+   | JS/CSS/字体 | CacheFirst | 静态资源优先缓存 |
+   | 汇率 API | NetworkFirst + cache | 离线时用上次缓存的汇率 |
+   | 图标/SVG | CacheFirst | 永久缓存 |
+
+**验收标准**:
+- [x] 安装 PWA 后, 关闭网络仍可打开应用
+- [x] 离线时可查看和编辑已有列表
+- [x] 离线时汇率使用缓存数据, 显示"离线模式"提示
+- [x] 恢复网络后自动刷新汇率
+- [x] 新版本发布后自动更新 SW (skipWaiting + clientsClaim)
+- [x] Lighthouse PWA 评分 > 90
+
+---
+
+### 2.4 价格历史与趋势
+
+**目标**: 记录产品价格变化, 支持查看历史价格趋势图
+
+**优先级**: P2 -- 将"一次性比较工具"升级为"长期省钱助手"
+
+**当前问题**:
+- 每次添加产品时只保存当前价格, 修改后旧价格丢失
+- 用户无法追踪同一商品在不同时间/渠道的价格变化
+- 缺乏"什么时候买最划算"的洞察
+
+**数据模型扩展**:
+
+```typescript
+// 价格记录
+interface PriceRecord {
+  price: number;
+  quantity: number;
+  unit: string;
+  currency: string;
+  unitPrice: number;      // 计算后的标准单价 (方便趋势对比)
+  recordedAt: string;     // ISO 8601
+  source?: string;        // 可选: 来源 (哪个超市/平台)
+}
+
+// 扩展 Product 类型
+interface Product {
+  // ... existing fields
+  priceHistory: PriceRecord[];  // 新增: 价格历史
+}
+```
+
+**实施步骤**:
+
+1. **自动记录价格历史** -- 修改 `useListState` hook:
+   - 添加产品时: 初始化 `priceHistory = [{ ...当前价格数据, recordedAt }]`
+   - 编辑产品价格时: 如果价格/数量/单位有变化, push 新记录到 `priceHistory`
+   - 不删除历史记录, 只追加
+
+2. **价格历史面板** -- 新建 `components/PriceHistoryPanel.tsx`:
+   - 在产品卡片上添加"价格历史"展开按钮 (小图标)
+   - 点击展开时空间内显示:
+     - **价格趋势迷你折线图**: X 轴时间, Y 轴标准单价
+     - **历史记录列表**: 日期 + 价格 + 变化百分比
+     - **统计摘要**: 最低价、最高价、平均价、当前 vs 最低差距
+
+3. **趋势图实现** -- 轻量方案:
+   - 使用原生 `<svg>` + `<polyline>` 绘制, 无需引入图表库
+   - 或使用轻量库 `recharts` (如果后续需要更多图表功能)
+   ```bash
+   npm install recharts    # 可选, 如需复杂图表
+   ```
+   - 迷你图尺寸: 宽度 100%, 高度 120px
+   - 数据点用圆点标记, hover 显示具体数值
+
+4. **价格来源标记** -- 可选增强:
+   - 产品表单增加可选的"来源"字段 (如"盒马"、"山姆"、"京东")
+   - 历史记录按来源区分颜色
+   - 允许同一产品从不同来源添加多条记录
+
+5. **数据兼容性**:
+   - 已有产品无 `priceHistory` 字段 -- `normalizeProduct()` 中自动初始化为 `[{当前价格}]`
+   - 导出/导入 (`data-backup.ts`) 自动包含 `priceHistory`
+   - 分享链接可选是否包含历史 (默认不包含以减小 URL 长度)
+
+6. **清理功能**:
+   - 提供"清除价格历史"操作 (保留当前价格, 清空历史记录)
+   - 历史记录上限: 50 条/产品 (超出时移除最旧记录)
+
+**涉及文件**:
+- `types/index.ts` -- 添加 `PriceRecord` 接口, 扩展 `Product`
+- `lib/comparison-lists.ts` -- `normalizeProduct` 添加 `priceHistory` 初始化
+- `hooks/useListState.ts` -- 产品更新时追加历史记录
+- `components/PriceHistoryPanel.tsx` -- 新建趋势图 + 历史列表
+- `components/ProductList.tsx` -- 产品卡片添加"价格历史"入口
+- `components/ProductEditorForm.tsx` -- 可选添加"来源"字段
+- `lib/data-backup.ts` -- 确保导入/导出兼容
+- `lib/share-utils.ts` -- 分享时可选剥离历史数据
+- `constants/translations.ts` -- 添加相关翻译
+
+**验收标准**:
+- [x] 每次编辑产品价格自动追加历史记录
+- [x] 产品卡片可展开查看价格历史
+- [x] 趋势图正确渲染 (至少 2 个数据点时显示)
+- [x] 历史记录显示日期、价格、变化百分比
+- [x] 统计摘要准确 (最低/最高/平均)
+- [x] 旧数据迁移兼容 (无 priceHistory 的产品自动初始化)
+- [x] 历史记录上限 50 条
+- [x] 导出/导入包含历史数据
+
+---
+
+## 附录: 其他待改进项 (后续迭代)
+
+以下不在短期/中期计划内, 但值得记录:
+
+| 类别 | 项目 | 说明 |
+|------|------|------|
+| **a11y** | skip-to-content 链接 | 添加跳转到主内容区的快捷链接 |
+| **a11y** | Modal 焦点捕获 | 分享 modal 等对话框需要 focus trap |
+| **a11y** | `aria-expanded` | 可折叠面板 (UnitManager, UnitConverter) 添加展开状态标记 |
+| **a11y** | 对比柱状图文本替代 | PriceComparisonBars 添加 `aria-label` |
+| **工程** | PostCSS autoprefixer | `postcss.config.mjs` 添加 autoprefixer 插件 |
+| **工程** | 组件级 Error Boundary | 为 ProductList、UnitManager 等添加独立错误边界 |
+| **工程** | `React.lazy` / `Suspense` | UnitConverter, UnitManager, SavingsCalculator 懒加载 |
+| **工程** | 错误监控 | 接入 Sentry 等外部错误上报服务 |
+| **工程** | E2E 测试 | Playwright 关键用户路径测试 |
+| **UX** | 搜索/筛选 | 首页列表搜索和分类筛选 |
+| **UX** | 批量操作 | 批量删除、归档、移动产品 |
+| **UX** | 表单字段级错误 | 替代 toast 的 inline 字段错误提示 |
+| **UX** | 空态引导 | 首页空状态的新手引导 |
+| **功能** | 条码扫描 | 移动端条码/价签识别快速录入 |
+| **功能** | 账户系统 + 云同步 | Supabase 后端, 跨设备数据同步 |
+| **功能** | 多人协作列表 | 实时协作, 需要后端 WebSocket 支持 |
+| **功能** | 浏览器扩展 | 电商网站价格抓取 |
+| **功能** | 多语言扩展 | 日语、韩语、东南亚语言 |
