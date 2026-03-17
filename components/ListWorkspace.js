@@ -8,7 +8,7 @@ import UnitConverter from './UnitConverter';
 import { useLanguage } from '../context/LanguageContext';
 import { normalizeComparisonList, normalizeProduct } from '../lib/comparison-lists';
 import { encodeSharedComparisonList } from '../lib/share-utils';
-import { ArrowLeftRight, Settings, BarChart3, Plus, Trash2, Download, Share2 } from 'lucide-react';
+import { ArrowLeftRight, Settings, BarChart3, Plus, Trash2, Download, Copy, X } from 'lucide-react';
 
 const DELETE_UNDO_DURATION = 5000;
 const CLEAR_ALL_UNDO_DURATION = 8000;
@@ -56,6 +56,8 @@ export default function ListWorkspace({ comparisonList, onSaveList }) {
   const [metadataDraft, setMetadataDraft] = useState({ name: comparisonList.name, category: comparisonList.category || '' });
   const [isSharingLink, setIsSharingLink] = useState(false);
   const [isSharingImage, setIsSharingImage] = useState(false);
+  const [manualShareUrl, setManualShareUrl] = useState('');
+  const [imagePreview, setImagePreview] = useState(null);
   const pendingDeleteRef = useRef(new Map());
   const pendingClearRef = useRef(null);
   const listRef = useRef(normalizeComparisonList(comparisonList));
@@ -94,6 +96,16 @@ export default function ListWorkspace({ comparisonList, onSaveList }) {
       toast.dismiss(pendingClearRef.current.toastId);
     }
   }, []);
+
+  useEffect(() => {
+    if (!imagePreview?.url) {
+      return undefined;
+    }
+
+    return () => {
+      URL.revokeObjectURL(imagePreview.url);
+    };
+  }, [imagePreview?.url]);
 
   const pushListUpdate = (patch) => {
     const resolvedPatch = typeof patch === 'function' ? patch(listRef.current) : patch;
@@ -279,28 +291,34 @@ export default function ListWorkspace({ comparisonList, onSaveList }) {
     return sharedUrl.toString();
   };
 
+  const closeManualShareModal = () => {
+    setManualShareUrl('');
+  };
+
+  const closeImagePreview = () => {
+    setImagePreview(null);
+  };
+
   const handleShareLink = async () => {
     setIsSharingLink(true);
+    let sharedUrl = '';
 
     try {
-      const sharedUrl = buildShareUrl();
+      sharedUrl = buildShareUrl();
+      setManualShareUrl('');
 
-      if (navigator.share) {
-        await navigator.share({
-          title: listRef.current.name,
-          text: t('shareLinkMessage').replace('{name}', listRef.current.name),
-          url: sharedUrl,
-        });
-      } else if (navigator.clipboard?.writeText) {
+      if (navigator.clipboard?.writeText) {
         await navigator.clipboard.writeText(sharedUrl);
+        toast.success(t('shareLinkSuccess'));
       } else {
-        throw new Error('Clipboard API is not available.');
+        setManualShareUrl(sharedUrl);
       }
-
-      toast.success(t('shareLinkSuccess'));
     } catch (error) {
-      if (error?.name !== 'AbortError') {
-        console.error('Failed to share list link:', error);
+      console.error('Failed to copy list link:', error);
+
+      if (sharedUrl) {
+        setManualShareUrl(sharedUrl);
+      } else {
         toast.error(t('shareLinkError'));
       }
     } finally {
@@ -317,10 +335,15 @@ export default function ListWorkspace({ comparisonList, onSaveList }) {
 
     try {
       const { default: html2canvas } = await import('html2canvas');
+      const isMobileViewport = window.matchMedia('(max-width: 768px)').matches;
+      const exportScale = isMobileViewport
+        ? Math.min(window.devicePixelRatio || 1, 1.5)
+        : 2;
       const canvas = await html2canvas(resultsCaptureRef.current, {
         backgroundColor: '#f6f3ee',
-        scale: 2,
+        scale: exportScale,
         useCORS: true,
+        logging: false,
       });
 
       const imageBlob = await new Promise((resolve, reject) => {
@@ -335,22 +358,13 @@ export default function ListWorkspace({ comparisonList, onSaveList }) {
       });
 
       const safeName = listRef.current.name.replace(/[^\w\u4e00-\u9fa5-]+/g, '-');
-      const imageFile = new File([imageBlob], `${safeName || 'price-pilot'}.png`, { type: 'image/png' });
+      const fileName = `${safeName || 'price-pilot'}.png`;
+      const imageUrl = URL.createObjectURL(imageBlob);
 
-      if (navigator.canShare?.({ files: [imageFile] })) {
-        await navigator.share({
-          title: listRef.current.name,
-          files: [imageFile],
-        });
-      } else {
-        const imageUrl = URL.createObjectURL(imageBlob);
-        const downloadLink = document.createElement('a');
-        downloadLink.href = imageUrl;
-        downloadLink.download = imageFile.name;
-        downloadLink.click();
-        URL.revokeObjectURL(imageUrl);
-      }
-
+      setImagePreview({
+        fileName,
+        url: imageUrl,
+      });
       toast.success(t('shareImageSuccess'));
     } catch (error) {
       if (error?.name !== 'AbortError') {
@@ -362,169 +376,287 @@ export default function ListWorkspace({ comparisonList, onSaveList }) {
     }
   };
 
+  const handleDownloadPreviewImage = () => {
+    if (!imagePreview?.url) {
+      return;
+    }
+
+    const downloadLink = document.createElement('a');
+    downloadLink.href = imagePreview.url;
+    downloadLink.download = imagePreview.fileName;
+    document.body.appendChild(downloadLink);
+    downloadLink.click();
+    downloadLink.remove();
+  };
+
   return (
-    <div className="space-y-6">
-      <div className="panel space-y-4 p-4 sm:p-5">
-        <div className="grid gap-4 md:grid-cols-[2fr_1fr]">
-          <div>
-            <label htmlFor="list-name" className="field-label">
-              {t('listNameLabel')}
-            </label>
-            <input
-              id="list-name"
-              type="text"
-              value={metadataDraft.name}
-              onChange={(event) => setMetadataDraft((prev) => ({ ...prev, name: event.target.value }))}
-              onBlur={commitMetadata}
-              onKeyDown={(event) => event.key === 'Enter' && commitMetadata()}
-              className="input text-base font-semibold sm:text-lg"
-              placeholder={t('listNamePlaceholder')}
-            />
+    <>
+      <div className="space-y-6">
+        <div className="panel space-y-4 p-4 sm:p-5">
+          <div className="grid gap-4 md:grid-cols-[2fr_1fr]">
+            <div>
+              <label htmlFor="list-name" className="field-label">
+                {t('listNameLabel')}
+              </label>
+              <input
+                id="list-name"
+                type="text"
+                value={metadataDraft.name}
+                onChange={(event) => setMetadataDraft((prev) => ({ ...prev, name: event.target.value }))}
+                onBlur={commitMetadata}
+                onKeyDown={(event) => event.key === 'Enter' && commitMetadata()}
+                className="input text-base font-semibold sm:text-lg"
+                placeholder={t('listNamePlaceholder')}
+              />
+            </div>
+            <div>
+              <label htmlFor="list-category" className="field-label">
+                {t('listCategoryLabel')}
+              </label>
+              <input
+                id="list-category"
+                type="text"
+                value={metadataDraft.category}
+                onChange={(event) => setMetadataDraft((prev) => ({ ...prev, category: event.target.value }))}
+                onBlur={commitMetadata}
+                onKeyDown={(event) => event.key === 'Enter' && commitMetadata()}
+                className="input"
+                placeholder={t('listCategoryPlaceholder')}
+              />
+            </div>
           </div>
-          <div>
-            <label htmlFor="list-category" className="field-label">
-              {t('listCategoryLabel')}
-            </label>
-            <input
-              id="list-category"
-              type="text"
-              value={metadataDraft.category}
-              onChange={(event) => setMetadataDraft((prev) => ({ ...prev, category: event.target.value }))}
-              onBlur={commitMetadata}
-              onKeyDown={(event) => event.key === 'Enter' && commitMetadata()}
-              className="input"
-              placeholder={t('listCategoryPlaceholder')}
-            />
-          </div>
-        </div>
-        <p className="text-xs text-muted">
-          {t('listUpdatedAt').replace('{date}', new Date(normalizedList.updatedAt).toLocaleString())}
-        </p>
-      </div>
-
-      <div className={`panel space-y-4 p-4 sm:p-5 ${products.length === 0 || highlightForm ? 'panel-highlight' : ''}`}>
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-          <div className="space-y-1">
-            <h2 className="section-title flex items-center gap-2">
-              <Plus className="h-4 w-4 text-brand" />
-              {t('addItem')}
-            </h2>
-            <p className="section-description">{t('addItemsToCompare')}</p>
-          </div>
-
-          <div className="w-full sm:w-auto">
-            <CurrencySelector
-              onCurrencyChange={(currency) => pushListUpdate({ baseCurrency: currency })}
-              defaultCurrency={baseCurrency}
-            />
-          </div>
+          <p className="text-xs text-muted">
+            {t('listUpdatedAt').replace('{date}', new Date(normalizedList.updatedAt).toLocaleString())}
+          </p>
         </div>
 
-        <AddProductForm
-          onAddProduct={handleAddProduct}
-          unitSystem={unitSystem}
-          defaultCurrency={baseCurrency}
-          recentUnits={recentUnits}
-        />
+        <div className={`panel space-y-4 p-4 sm:p-5 ${products.length === 0 || highlightForm ? 'panel-highlight' : ''}`}>
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+            <div className="space-y-1">
+              <h2 className="section-title flex items-center gap-2">
+                <Plus className="h-4 w-4 text-brand" />
+                {t('addItem')}
+              </h2>
+              <p className="section-description">{t('addItemsToCompare')}</p>
+            </div>
 
-        <div className="flex flex-wrap gap-2 pt-1">
-          <button
-            type="button"
-            onClick={() => setActivePanel(activePanel === 'converter' ? null : 'converter')}
-            className={`btn text-sm ${activePanel === 'converter' ? 'btn-primary' : 'btn-secondary'}`}
-          >
-            <ArrowLeftRight className="h-4 w-4" />
-            {t('unitConverter')}
-          </button>
-          <button
-            type="button"
-            onClick={() => setActivePanel(activePanel === 'unit-manager' ? null : 'unit-manager')}
-            className={`btn text-sm ${activePanel === 'unit-manager' ? 'btn-primary' : 'btn-secondary'}`}
-          >
-            <Settings className="h-4 w-4" />
-            {t('unitManager')}
-          </button>
-        </div>
-      </div>
+            <div className="w-full sm:w-auto">
+              <CurrencySelector
+                onCurrencyChange={(currency) => pushListUpdate({ baseCurrency: currency })}
+                defaultCurrency={baseCurrency}
+              />
+            </div>
+          </div>
 
-      {activePanel === 'unit-manager' && (
-        <div className="animate-fade-in">
-          <UnitManager
+          <AddProductForm
+            onAddProduct={handleAddProduct}
             unitSystem={unitSystem}
-            onUpdateUnits={(updatedSystem) => {
-              pushListUpdate({ unitSystem: updatedSystem });
-              toast.success(t('unitsUpdated'));
-            }}
+            defaultCurrency={baseCurrency}
+            recentUnits={recentUnits}
           />
-        </div>
-      )}
 
-      {activePanel === 'converter' && (
-        <div className="animate-fade-in">
-          <UnitConverter unitSystem={unitSystem} />
+          <div className="flex flex-wrap gap-2 pt-1">
+            <button
+              type="button"
+              onClick={() => setActivePanel(activePanel === 'converter' ? null : 'converter')}
+              className={`btn text-sm ${activePanel === 'converter' ? 'btn-primary' : 'btn-secondary'}`}
+            >
+              <ArrowLeftRight className="h-4 w-4" />
+              {t('unitConverter')}
+            </button>
+            <button
+              type="button"
+              onClick={() => setActivePanel(activePanel === 'unit-manager' ? null : 'unit-manager')}
+              className={`btn text-sm ${activePanel === 'unit-manager' ? 'btn-primary' : 'btn-secondary'}`}
+            >
+              <Settings className="h-4 w-4" />
+              {t('unitManager')}
+            </button>
+          </div>
         </div>
-      )}
 
-      <section className="space-y-4">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-          <div className="space-y-1">
-            <h2 className="section-title flex items-center gap-2">
-              <BarChart3 className="h-5 w-5 text-brand" />
-              {t('results')}
-            </h2>
+        {activePanel === 'unit-manager' && (
+          <div className="animate-fade-in">
+            <UnitManager
+              unitSystem={unitSystem}
+              onUpdateUnits={(updatedSystem) => {
+                pushListUpdate({ unitSystem: updatedSystem });
+                toast.success(t('unitsUpdated'));
+              }}
+            />
+          </div>
+        )}
+
+        {activePanel === 'converter' && (
+          <div className="animate-fade-in">
+            <UnitConverter unitSystem={unitSystem} />
+          </div>
+        )}
+
+        <section className="space-y-4">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div className="space-y-1">
+              <h2 className="section-title flex items-center gap-2">
+                <BarChart3 className="h-5 w-5 text-brand" />
+                {t('results')}
+              </h2>
+            </div>
+
+            {products.length > 0 && (
+              <div className="grid grid-cols-1 gap-2 sm:flex sm:flex-wrap sm:justify-end">
+                <button
+                  type="button"
+                  onClick={handleShareLink}
+                  disabled={isSharingLink}
+                  className="btn btn-secondary w-full text-sm sm:w-auto"
+                >
+                  <Copy className="h-4 w-4" />
+                  {isSharingLink ? t('shareActionBusy') : t('shareLinkAction')}
+                </button>
+                <button
+                  type="button"
+                  onClick={handleShareImage}
+                  disabled={isSharingImage}
+                  className="btn btn-secondary w-full text-sm sm:w-auto"
+                >
+                  <Download className="h-4 w-4" />
+                  {isSharingImage ? t('shareActionBusy') : t('shareImageAction')}
+                </button>
+              </div>
+            )}
+          </div>
+
+          <div ref={resultsCaptureRef} className="space-y-4">
+            <ProductList
+              products={products}
+              baseCurrency={baseCurrency}
+              onRemoveProduct={handleRemoveProduct}
+              onUpdateProduct={handleUpdateProduct}
+              onLoadSampleData={handleLoadSampleData}
+              pendingProductIds={pendingProductIds}
+              recentUnits={recentUnits}
+              unitSystem={unitSystem}
+            />
           </div>
 
           {products.length > 0 && (
-            <div className="grid grid-cols-1 gap-2 sm:flex sm:flex-wrap sm:justify-end">
+            <div className="flex justify-end">
               <button
                 type="button"
-                onClick={handleShareLink}
-                disabled={isSharingLink}
-                className="btn btn-secondary w-full text-sm sm:w-auto"
+                onClick={handleClearAll}
+                aria-label={t('clearAll')}
+                className="btn btn-danger w-full text-sm sm:w-auto"
               >
-                <Share2 className="h-4 w-4" />
-                {isSharingLink ? t('shareActionBusy') : t('shareLinkAction')}
-              </button>
-              <button
-                type="button"
-                onClick={handleShareImage}
-                disabled={isSharingImage}
-                className="btn btn-secondary w-full text-sm sm:w-auto"
-              >
-                <Download className="h-4 w-4" />
-                {isSharingImage ? t('shareActionBusy') : t('shareImageAction')}
+                <Trash2 className="h-4 w-4" />
+                {t('clearAll')}
               </button>
             </div>
           )}
-        </div>
+        </section>
+      </div>
 
-        <div ref={resultsCaptureRef} className="space-y-4">
-          <ProductList
-            products={products}
-            baseCurrency={baseCurrency}
-            onRemoveProduct={handleRemoveProduct}
-            onUpdateProduct={handleUpdateProduct}
-            onLoadSampleData={handleLoadSampleData}
-            pendingProductIds={pendingProductIds}
-            recentUnits={recentUnits}
-            unitSystem={unitSystem}
-          />
-        </div>
+      {manualShareUrl && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          className="fixed inset-0 z-[70] flex items-center justify-center bg-slate-950/45 px-4 py-6 backdrop-blur-sm"
+          onClick={(event) => {
+            if (event.target === event.currentTarget) {
+              closeManualShareModal();
+            }
+          }}
+        >
+          <div className="panel w-full max-w-lg space-y-4 p-4 sm:p-5">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <h3 className="text-base font-semibold text-foreground">{t('shareLinkFallbackTitle')}</h3>
+                <p className="mt-1 text-sm leading-6 text-muted">{t('shareLinkFallbackBody')}</p>
+              </div>
+              <button
+                type="button"
+                onClick={closeManualShareModal}
+                className="icon-btn h-10 w-10 flex-shrink-0"
+                aria-label={t('closePreviewAction')}
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
 
-        {products.length > 0 && (
-          <div className="flex justify-end">
-            <button
-              type="button"
-              onClick={handleClearAll}
-              aria-label={t('clearAll')}
-              className="btn btn-danger w-full text-sm sm:w-auto"
-            >
-              <Trash2 className="h-4 w-4" />
-              {t('clearAll')}
-            </button>
+            <label htmlFor="manual-share-url" className="field-label">
+              {t('shareLinkFieldLabel')}
+            </label>
+            <textarea
+              id="manual-share-url"
+              value={manualShareUrl}
+              readOnly
+              onFocus={(event) => event.currentTarget.select()}
+              className="input min-h-28 resize-none font-mono text-sm leading-6"
+            />
+
+            <p className="text-xs leading-5 text-muted">{t('shareLinkFallbackHint')}</p>
           </div>
-        )}
-      </section>
-    </div>
+        </div>
+      )}
+
+      {imagePreview && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          className="fixed inset-0 z-[70] overflow-y-auto bg-slate-950/55 px-4 py-6 backdrop-blur-sm"
+          onClick={(event) => {
+            if (event.target === event.currentTarget) {
+              closeImagePreview();
+            }
+          }}
+        >
+          <div className="mx-auto flex min-h-full max-w-4xl items-center justify-center">
+            <div className="panel w-full space-y-4 p-4 sm:p-5">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <h3 className="text-base font-semibold text-foreground">{t('shareImagePreviewTitle')}</h3>
+                  <p className="mt-1 text-sm leading-6 text-muted">{t('shareImagePreviewBody')}</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={closeImagePreview}
+                  className="icon-btn h-10 w-10 flex-shrink-0"
+                  aria-label={t('closePreviewAction')}
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+
+              <div className="overflow-hidden rounded-[18px] border border-[color:var(--border)] bg-[color:var(--surface-muted)] p-2">
+                <img
+                  src={imagePreview.url}
+                  alt={t('shareImagePreviewTitle')}
+                  className="mx-auto h-auto max-h-[70vh] w-full rounded-[14px] object-contain"
+                />
+              </div>
+
+              <p className="text-xs leading-5 text-muted">{t('shareImagePreviewHint')}</p>
+
+              <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+                <button
+                  type="button"
+                  onClick={closeImagePreview}
+                  className="btn btn-secondary text-sm"
+                >
+                  {t('closePreviewAction')}
+                </button>
+                <button
+                  type="button"
+                  onClick={handleDownloadPreviewImage}
+                  className="btn btn-primary text-sm"
+                >
+                  <Download className="h-4 w-4" />
+                  {t('shareImageDownloadAction')}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 }
