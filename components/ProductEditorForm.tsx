@@ -1,10 +1,19 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ChangeEvent,
+  type FormEvent,
+  type KeyboardEvent,
+} from 'react';
 import { toast } from 'react-hot-toast';
 import { ChevronDown } from 'lucide-react';
-import { useLanguage } from '../context/LanguageContext';
-import { parseSmartProductInput } from '../lib/smart-product-parser';
+import { useLanguage } from '@/context/LanguageContext';
+import { parseSmartProductInput } from '@/lib/smart-product-parser';
+import type { CurrencyCode, Product, ProductInput, UnitCategory, UnitSystem } from '@/types';
 
-const currencySymbols = {
+const currencySymbols: Record<string, string> = {
     CNY: '¥',
     USD: '$',
     EUR: '€',
@@ -20,9 +29,35 @@ const currencySymbols = {
 
 const invalidNumberKeys = new Set(['e', 'E', '+', '-']);
 
-const getDefaultUnit = (unitSystem) => Object.values(unitSystem)[0]?.baseUnit || 'g';
+interface ProductFormData {
+  name: string;
+  price: string;
+  quantity: string;
+  unit: string;
+  currency: string;
+}
 
-const buildFormData = (initialProduct, defaultCurrency, unitSystem) => ({
+interface ProductEditorFormProps {
+  initialProduct?: Product;
+  unitSystem: UnitSystem;
+  defaultCurrency?: string;
+  submitLabel: string;
+  onSubmit: (product: ProductInput) => void;
+  onCancel?: () => void;
+  resetOnSubmit?: boolean;
+  autoFocus?: boolean;
+  compact?: boolean;
+  recentUnits?: string[];
+  className?: string;
+}
+
+const getDefaultUnit = (unitSystem: UnitSystem): string => Object.values(unitSystem)[0]?.baseUnit || 'g';
+
+const buildFormData = (
+  initialProduct: Product | undefined,
+  defaultCurrency: string,
+  unitSystem: UnitSystem
+): ProductFormData => ({
     name: initialProduct?.name || '',
     price: initialProduct?.price?.toString() || '',
     quantity: initialProduct?.quantity?.toString() || '',
@@ -42,9 +77,9 @@ export default function ProductEditorForm({
     compact = false,
     recentUnits = [],
     className = '',
-}) {
+}: ProductEditorFormProps) {
     const [formData, setFormData] = useState(() => buildFormData(initialProduct, defaultCurrency, unitSystem));
-    const nameRef = useRef(null);
+    const nameRef = useRef<HTMLInputElement | null>(null);
     const { t } = useLanguage();
     const formIdPrefix = useMemo(
         () => initialProduct?.id || `product-form-${defaultCurrency.toLowerCase()}`,
@@ -77,12 +112,16 @@ export default function ProductEditorForm({
     const orderedUnitGroups = useMemo(() => {
         const recentUnitIndex = new Map(recentUnits.map((unit, index) => [unit, index]));
 
-        return Object.entries(unitSystem).map(([type, info]) => ({
+        return (Object.entries(unitSystem) as Array<[string, UnitCategory]>).map(([type, info]) => ({
             type,
             info,
             conversions: Object.entries(info.conversions).sort(([codeA], [codeB]) => {
-                const rankA = recentUnitIndex.has(codeA) ? recentUnitIndex.get(codeA) : Number.POSITIVE_INFINITY;
-                const rankB = recentUnitIndex.has(codeB) ? recentUnitIndex.get(codeB) : Number.POSITIVE_INFINITY;
+                const rankA = recentUnitIndex.has(codeA)
+                  ? (recentUnitIndex.get(codeA) ?? Number.POSITIVE_INFINITY)
+                  : Number.POSITIVE_INFINITY;
+                const rankB = recentUnitIndex.has(codeB)
+                  ? (recentUnitIndex.get(codeB) ?? Number.POSITIVE_INFINITY)
+                  : Number.POSITIVE_INFINITY;
 
                 if (rankA !== rankB) {
                     return rankA - rankB;
@@ -93,12 +132,12 @@ export default function ProductEditorForm({
         }));
     }, [recentUnits, unitSystem]);
 
-    const handleChange = (event) => {
+    const handleChange = (event: ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         const { name, value } = event.target;
         setFormData((prev) => ({ ...prev, [name]: value }));
     };
 
-    const handleSubmit = (event) => {
+    const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
         event.preventDefault();
 
         if (!formData.name.trim() || !formData.price || !formData.quantity || !formData.unit) {
@@ -135,21 +174,21 @@ export default function ProductEditorForm({
         }
     };
 
-    const handleKeyDown = (event) => {
+    const handleKeyDown = (event: KeyboardEvent<HTMLFormElement>) => {
         if (event.key === 'Escape' && onCancel) {
             event.preventDefault();
             onCancel();
         }
     };
 
-    const handleNumberKeyDown = (event) => {
+    const handleNumberKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
         if (invalidNumberKeys.has(event.key)) {
             event.preventDefault();
         }
     };
 
     const handleSmartParse = () => {
-        const parsedProduct = parseSmartProductInput(formData.name, defaultCurrency);
+        const parsedProduct = parseSmartProductInput(formData.name, defaultCurrency as CurrencyCode);
 
         if (!parsedProduct) {
             toast.error(t('smartParseError'));
@@ -158,11 +197,11 @@ export default function ProductEditorForm({
 
         setFormData((prev) => ({
             ...prev,
-            name: parsedProduct.name,
-            price: parsedProduct.price.toString(),
-            quantity: parsedProduct.quantity.toString(),
-            unit: parsedProduct.unit,
-            currency: parsedProduct.currency,
+            name: parsedProduct.name ?? prev.name,
+            price: parsedProduct.price !== undefined ? parsedProduct.price.toString() : prev.price,
+            quantity: parsedProduct.quantity !== undefined ? parsedProduct.quantity.toString() : prev.quantity,
+            unit: parsedProduct.unit ?? prev.unit,
+            currency: parsedProduct.currency ?? prev.currency,
         }));
         toast.success(t('smartParseSuccess'));
     };
@@ -193,7 +232,7 @@ export default function ProductEditorForm({
                     value={formData.name}
                     onChange={handleChange}
                     className={inputClassName}
-                    placeholder={t('productNamePlaceholder')}
+                            placeholder={t('productNamePlaceholder')}
                 />
                 <p className="mt-2 text-xs leading-5 text-muted">{t('smartParseHint')}</p>
             </div>
@@ -203,7 +242,7 @@ export default function ProductEditorForm({
                     <label htmlFor={priceInputId} className={labelClassName}>{t('price')}</label>
                     <div className="relative">
                         <span className="pointer-events-none absolute left-3 top-1/2 z-10 -translate-y-1/2 text-sm font-semibold text-foreground">
-                            {currencySymbols[formData.currency]}
+                            {currencySymbols[formData.currency] ?? formData.currency}
                         </span>
                         <input
                             id={priceInputId}

@@ -1,15 +1,16 @@
-import { normalizeComparisonList } from './comparison-lists';
+import { normalizeComparisonList } from '@/lib/comparison-lists';
+import type { ComparisonList, ComparisonListDraft, Locale, SharedComparisonList } from '@/types';
 
-const encodeBytes = (bytes) => {
+function encodeBytes(bytes: Uint8Array): string {
   let binary = '';
   bytes.forEach((byte) => {
     binary += String.fromCharCode(byte);
   });
 
   return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '');
-};
+}
 
-const decodeBytes = (value) => {
+function decodeBytes(value: string): Uint8Array {
   const normalized = value.replace(/-/g, '+').replace(/_/g, '/');
   const padding = normalized.length % 4 === 0 ? '' : '='.repeat(4 - (normalized.length % 4));
   const binary = atob(`${normalized}${padding}`);
@@ -20,11 +21,14 @@ const decodeBytes = (value) => {
   }
 
   return bytes;
-};
+}
 
-export function encodeSharedComparisonList(list, locale = 'zh') {
+export function encodeSharedComparisonList(
+  list: ComparisonListDraft,
+  locale: Locale = 'zh'
+): string {
   const normalizedList = normalizeComparisonList(list, locale);
-  const payload = {
+  const payload: SharedComparisonList = {
     name: normalizedList.name,
     category: normalizedList.category,
     products: normalizedList.products,
@@ -36,12 +40,23 @@ export function encodeSharedComparisonList(list, locale = 'zh') {
   return encodeBytes(new TextEncoder().encode(JSON.stringify(payload)));
 }
 
-export function decodeSharedComparisonList(value, locale = 'zh') {
-  const decodedText = new TextDecoder().decode(decodeBytes(value));
-  const parsedValue = JSON.parse(decodedText);
+export function decodeSharedComparisonList(
+  value: string,
+  locale: Locale = 'zh'
+): ComparisonList | null {
+  try {
+    const decodedText = new TextDecoder().decode(decodeBytes(value));
+    const parsedValue = JSON.parse(decodedText) as ComparisonListDraft;
 
-  return normalizeComparisonList({
-    ...parsedValue,
-    archived: false,
-  }, locale);
+    return normalizeComparisonList(
+      {
+        ...parsedValue,
+        archived: false,
+      },
+      locale
+    );
+  } catch (error) {
+    console.error('Failed to decode shared comparison list:', error);
+    return null;
+  }
 }

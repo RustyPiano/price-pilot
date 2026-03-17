@@ -62,7 +62,7 @@ npm install
 
 # （可选）配置汇率 API
 cp .env.example .env.local
-# 编辑 .env.local，填入 NEXT_PUBLIC_EXCHANGE_RATE_API_KEY
+# 编辑 .env.local，填入 EXCHANGE_RATE_API_KEY
 
 # 启动开发服务器
 npm run dev
@@ -87,7 +87,7 @@ npm start
 2. 在项目根目录创建 `.env.local`：
 
 ```env
-NEXT_PUBLIC_EXCHANGE_RATE_API_KEY=your_api_key_here
+EXCHANGE_RATE_API_KEY=your_api_key_here
 ```
 
 > 不配置 API Key 时，多货币汇率换算不可用，但单一货币的单价对比功能不受影响。
@@ -131,32 +131,37 @@ NEXT_PUBLIC_EXCHANGE_RATE_API_KEY=your_api_key_here
 ```
 price-pilot/
 ├── pages/
-│   ├── index.js              # 首页 - 清单管理
-│   └── list/[id].js          # 清单详情页（支持 ?share= 参数展示分享数据）
+│   ├── api/exchange-rates.ts # 汇率服务端代理与缓存
+│   ├── index.tsx             # 首页 - 清单管理 / 备份导入导出
+│   └── list/[id].tsx         # 清单详情页（支持 ?share= 参数展示分享数据）
 ├── components/
-│   ├── ListWorkspace.js      # 清单详情主容器
-│   ├── ProductList.js        # 商品列表与对比结果
-│   ├── ProductEditorForm.js  # 商品编辑表单（新增/编辑通用）
-│   ├── AddProductForm.js     # 新增商品的表单包装
-│   ├── PriceComparisonBars.js# 单价对比条形图
-│   ├── SavingsCalculator.js  # 省钱计算器
-│   ├── UnitConverter.js      # 单位换算工具
-│   ├── UnitManager.js        # 自定义单位管理
-│   ├── CurrencySelector.js   # 货币选择器
-│   ├── LanguageToggle.js     # 语言切换按钮
-│   ├── PageHeader.js         # 顶部导航栏
-│   └── ErrorBoundary.js      # 错误边界组件
+│   ├── ListWorkspace.tsx     # 清单详情主容器
+│   ├── ProductList.tsx       # 商品列表与对比结果
+│   ├── ProductEditorForm.tsx # 商品编辑表单（新增/编辑通用）
+│   ├── AddProductForm.tsx    # 新增商品的表单包装
+│   ├── PriceComparisonBars.tsx # 单价对比条形图
+│   ├── SavingsCalculator.tsx # 省钱计算器
+│   ├── UnitConverter.tsx     # 单位换算工具
+│   ├── UnitManager.tsx       # 自定义单位管理
+│   ├── CurrencySelector.tsx  # 货币选择器
+│   ├── LanguageToggle.tsx    # 语言切换按钮
+│   ├── PageHeader.tsx        # 顶部导航栏 + 主题切换
+│   └── ErrorBoundary.tsx     # 错误边界组件
 ├── lib/
-│   ├── comparison-lists.js   # IndexedDB CRUD 与数据迁移
-│   ├── comparison-math.js    # 单价计算与分组排序引擎
-│   ├── share-utils.js        # 分享链接编解码（Base64）
-│   └── smart-product-parser.js # 自然语言商品输入解析
+│   ├── comparison-lists.ts   # IndexedDB CRUD 与数据迁移
+│   ├── comparison-math.ts    # 单价计算与分组排序引擎
+│   ├── data-backup.ts        # JSON 备份导入导出
+│   ├── share-utils.ts        # 分享链接编解码（Base64）
+│   └── smart-product-parser.ts # 自然语言商品输入解析
 ├── constants/
-│   ├── currencies.js         # 货币列表与汇率 API 调用
-│   ├── translations.js       # 中英文翻译字典
-│   └── unitSystem.js         # 内置单位系统（含换算率）
+│   ├── currencies.ts         # 货币列表与客户端汇率请求
+│   ├── translations.ts       # 中英文翻译字典
+│   └── unitSystem.ts         # 内置单位系统（含换算率）
 ├── context/
-│   └── LanguageContext.js    # 全局语言状态（zh / en）
+│   ├── LanguageContext.tsx   # 全局语言状态（zh / en）
+│   └── ThemeContext.tsx      # 主题状态（light / dark / system）
+├── tests/
+│   └── lib/*.test.ts         # 核心逻辑单元测试
 └── styles/
     └── globals.css           # Tailwind 基础 + CSS 变量主题
 ```
@@ -170,9 +175,11 @@ price-pilot/
 | [Next.js](https://nextjs.org/) | 15.x | React 框架（Pages Router） |
 | [React](https://react.dev/) | 19.x | UI 框架 |
 | [Tailwind CSS](https://tailwindcss.com/) | 3.x | 原子化样式 |
+| [TypeScript](https://www.typescriptlang.org/) | 5.x | 严格类型检查 |
 | [Lucide React](https://lucide.dev/) | — | 图标库 |
 | [react-hot-toast](https://react-hot-toast.com/) | — | Toast 通知 |
 | [html2canvas](https://html2canvas.hertzen.com/) | — | 截图分享 |
+| [Vitest](https://vitest.dev/) | 4.x | 单元测试 |
 | IndexedDB | 浏览器内置 | 本地数据持久化 |
 
 无后端、无数据库、无账号系统——一切运行在用户浏览器中。

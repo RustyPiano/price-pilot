@@ -1,19 +1,54 @@
 import { useEffect, useRef, useState } from 'react';
 import { toast } from 'react-hot-toast';
-import AddProductForm from './AddProductForm';
-import CurrencySelector from './CurrencySelector';
-import ProductList from './ProductList';
-import UnitManager from './UnitManager';
-import UnitConverter from './UnitConverter';
-import { useLanguage } from '../context/LanguageContext';
-import { normalizeComparisonList, normalizeProduct } from '../lib/comparison-lists';
-import { encodeSharedComparisonList } from '../lib/share-utils';
+import AddProductForm from '@/components/AddProductForm';
+import CurrencySelector from '@/components/CurrencySelector';
+import ProductList from '@/components/ProductList';
+import UnitManager from '@/components/UnitManager';
+import UnitConverter from '@/components/UnitConverter';
+import { useLanguage } from '@/context/LanguageContext';
+import { useTheme } from '@/context/ThemeContext';
+import { normalizeComparisonList, normalizeProduct } from '@/lib/comparison-lists';
+import { encodeSharedComparisonList } from '@/lib/share-utils';
 import { ArrowLeftRight, Settings, BarChart3, Plus, Trash2, Download, Copy, X } from 'lucide-react';
+import type {
+  ComparisonList,
+  ComparisonListDraft,
+  ImagePreview,
+  ProductInput,
+  TranslationSampleProduct,
+  UnitSystem,
+} from '@/types';
 
 const DELETE_UNDO_DURATION = 5000;
 const CLEAR_ALL_UNDO_DURATION = 8000;
 
-function UndoToast({ title, description, expiresAt, actionLabel, onAction, onExpire }) {
+interface UndoToastProps {
+  title: string;
+  description: string;
+  expiresAt: number;
+  actionLabel: string;
+  onAction: () => void;
+  onExpire?: () => void;
+}
+
+interface PendingDeleteEntry {
+  timeoutId: number;
+  toastId: string;
+}
+
+interface PendingClearEntry extends PendingDeleteEntry {
+  productIds: string[];
+}
+
+interface ListWorkspaceProps {
+  comparisonList: ComparisonList;
+  onSaveList: (list: ComparisonList) => void;
+}
+
+type ActivePanel = 'converter' | 'unit-manager' | null;
+type ListPatch = Partial<ComparisonList> | ((currentList: ComparisonList) => Partial<ComparisonList>);
+
+function UndoToast({ title, description, expiresAt, actionLabel, onAction, onExpire }: UndoToastProps) {
   const [secondsLeft, setSecondsLeft] = useState(() => Math.max(1, Math.ceil((expiresAt - Date.now()) / 1000)));
   const hasExpiredRef = useRef(false);
 
@@ -49,20 +84,21 @@ function UndoToast({ title, description, expiresAt, actionLabel, onAction, onExp
   );
 }
 
-export default function ListWorkspace({ comparisonList, onSaveList }) {
-  const [activePanel, setActivePanel] = useState(null);
+export default function ListWorkspace({ comparisonList, onSaveList }: ListWorkspaceProps) {
+  const [activePanel, setActivePanel] = useState<ActivePanel>(null);
   const [highlightForm, setHighlightForm] = useState(false);
-  const [pendingProductIds, setPendingProductIds] = useState([]);
+  const [pendingProductIds, setPendingProductIds] = useState<string[]>([]);
   const [metadataDraft, setMetadataDraft] = useState({ name: comparisonList.name, category: comparisonList.category || '' });
   const [isSharingLink, setIsSharingLink] = useState(false);
   const [isSharingImage, setIsSharingImage] = useState(false);
   const [manualShareUrl, setManualShareUrl] = useState('');
-  const [imagePreview, setImagePreview] = useState(null);
-  const pendingDeleteRef = useRef(new Map());
-  const pendingClearRef = useRef(null);
-  const listRef = useRef(normalizeComparisonList(comparisonList));
-  const resultsCaptureRef = useRef(null);
+  const [imagePreview, setImagePreview] = useState<ImagePreview | null>(null);
+  const pendingDeleteRef = useRef<Map<string, PendingDeleteEntry>>(new Map());
+  const pendingClearRef = useRef<PendingClearEntry | null>(null);
+  const listRef = useRef<ComparisonList>(normalizeComparisonList(comparisonList));
+  const resultsCaptureRef = useRef<HTMLDivElement | null>(null);
   const { t } = useLanguage();
+  const { resolvedTheme } = useTheme();
 
   const normalizedList = normalizeComparisonList(comparisonList);
   const { products, baseCurrency, unitSystem, recentUnits } = normalizedList;
@@ -107,7 +143,7 @@ export default function ListWorkspace({ comparisonList, onSaveList }) {
     };
   }, [imagePreview?.url]);
 
-  const pushListUpdate = (patch) => {
+  const pushListUpdate = (patch: ListPatch) => {
     const resolvedPatch = typeof patch === 'function' ? patch(listRef.current) : patch;
     const nextList = normalizeComparisonList({
       ...listRef.current,
@@ -119,11 +155,11 @@ export default function ListWorkspace({ comparisonList, onSaveList }) {
     onSaveList(nextList);
   };
 
-  const promoteRecentUnit = (unit, sourceUnits = listRef.current.recentUnits) => {
+  const promoteRecentUnit = (unit: string, sourceUnits = listRef.current.recentUnits) => {
     return [unit, ...sourceUnits.filter((item) => item !== unit)].slice(0, 6);
   };
 
-  const dismissPendingDelete = (productId) => {
+  const dismissPendingDelete = (productId: string) => {
     const pendingDelete = pendingDeleteRef.current.get(productId);
     if (!pendingDelete) return;
 
@@ -153,7 +189,7 @@ export default function ListWorkspace({ comparisonList, onSaveList }) {
     toast.success(t('listUpdatedSuccess'));
   };
 
-  const handleAddProduct = (product) => {
+  const handleAddProduct = (product: ProductInput) => {
     const nextProduct = normalizeProduct({
       ...product,
       timestamp: product.timestamp || new Date().toISOString(),
@@ -166,7 +202,7 @@ export default function ListWorkspace({ comparisonList, onSaveList }) {
     toast.success(t('addedSuccess'));
   };
 
-  const handleRemoveProduct = (productId) => {
+  const handleRemoveProduct = (productId: string) => {
     if (pendingDeleteRef.current.has(productId)) return;
 
     const expiresAt = Date.now() + DELETE_UNDO_DURATION;
@@ -204,7 +240,7 @@ export default function ListWorkspace({ comparisonList, onSaveList }) {
     );
   };
 
-  const handleUpdateProduct = (productId, updatedProduct) => {
+  const handleUpdateProduct = (productId: string, updatedProduct: ProductInput) => {
     pushListUpdate((currentList) => ({
       products: currentList.products.map((product) => (
         product.id === productId
@@ -222,7 +258,7 @@ export default function ListWorkspace({ comparisonList, onSaveList }) {
   };
 
   const handleLoadSampleData = () => {
-    const sampleProducts = t('sampleProducts');
+    const sampleProducts = t('sampleProducts') as TranslationSampleProduct[];
     if (!Array.isArray(sampleProducts)) return;
 
     pushListUpdate((currentList) => ({
@@ -340,13 +376,13 @@ export default function ListWorkspace({ comparisonList, onSaveList }) {
         ? Math.min(window.devicePixelRatio || 1, 1.5)
         : 2;
       const canvas = await html2canvas(resultsCaptureRef.current, {
-        backgroundColor: '#f6f3ee',
+        backgroundColor: resolvedTheme === 'dark' ? '#0f1117' : '#f6f3ee',
         scale: exportScale,
         useCORS: true,
         logging: false,
       });
 
-      const imageBlob = await new Promise((resolve, reject) => {
+      const imageBlob = await new Promise<Blob>((resolve, reject) => {
         canvas.toBlob((blob) => {
           if (blob) {
             resolve(blob);
@@ -367,7 +403,7 @@ export default function ListWorkspace({ comparisonList, onSaveList }) {
       });
       toast.success(t('shareImageSuccess'));
     } catch (error) {
-      if (error?.name !== 'AbortError') {
+      if (!(error instanceof Error) || error.name !== 'AbortError') {
         console.error('Failed to share result image:', error);
         toast.error(t('shareImageError'));
       }
@@ -559,7 +595,7 @@ export default function ListWorkspace({ comparisonList, onSaveList }) {
         <div
           role="dialog"
           aria-modal="true"
-          className="fixed inset-0 z-[70] flex items-center justify-center bg-slate-950/45 px-4 py-6 backdrop-blur-sm"
+          className="fixed inset-0 z-[70] flex items-center justify-center bg-[color:var(--overlay-backdrop)] px-4 py-6 backdrop-blur-sm"
           onClick={(event) => {
             if (event.target === event.currentTarget) {
               closeManualShareModal();
@@ -602,7 +638,7 @@ export default function ListWorkspace({ comparisonList, onSaveList }) {
         <div
           role="dialog"
           aria-modal="true"
-          className="fixed inset-0 z-[70] overflow-y-auto bg-slate-950/55 px-4 py-6 backdrop-blur-sm"
+          className="fixed inset-0 z-[70] overflow-y-auto bg-[color:var(--overlay-backdrop)] px-4 py-6 backdrop-blur-sm"
           onClick={(event) => {
             if (event.target === event.currentTarget) {
               closeImagePreview();

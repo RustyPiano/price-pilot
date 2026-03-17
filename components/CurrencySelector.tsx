@@ -1,9 +1,17 @@
-import { useState, useEffect, useMemo } from 'react';
-import { getCurrencies } from '../constants/currencies';
-import { useLanguage } from '../context/LanguageContext';
 import { ChevronDown } from 'lucide-react';
+import { useEffect, useMemo, useState, type ChangeEvent } from 'react';
+import { getCurrencies } from '@/constants/currencies';
+import { useLanguage } from '@/context/LanguageContext';
 
-export default function CurrencySelector({ onCurrencyChange, defaultCurrency = 'CNY' }) {
+interface CurrencySelectorProps {
+  onCurrencyChange: (currency: string) => void;
+  defaultCurrency?: string;
+}
+
+export default function CurrencySelector({
+  onCurrencyChange,
+  defaultCurrency = 'CNY',
+}: CurrencySelectorProps) {
   const [selectedCurrency, setSelectedCurrency] = useState(defaultCurrency);
   const { locale } = useLanguage();
   const currencies = useMemo(() => getCurrencies(locale || 'zh'), [locale]);
@@ -13,8 +21,8 @@ export default function CurrencySelector({ onCurrencyChange, defaultCurrency = '
     setSelectedCurrency(defaultCurrency);
   }, [defaultCurrency]);
 
-  const handleSelect = (e) => {
-    const code = e.target.value;
+  const handleSelect = (event: ChangeEvent<HTMLSelectElement>) => {
+    const code = event.target.value;
     setSelectedCurrency(code);
     onCurrencyChange(code);
   };

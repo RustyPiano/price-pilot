@@ -1,4 +1,4 @@
-import { useLanguage } from '../context/LanguageContext';
+import { useLanguage } from '@/context/LanguageContext';
 import { Globe } from 'lucide-react';
 
 export default function LanguageToggle() {
