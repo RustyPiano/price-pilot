@@ -1,6 +1,19 @@
-import { formatCurrencyAmount, getProductDisplayMeta } from '../lib/comparison-math';
+import { formatCurrencyAmount, getProductDisplayMeta } from '@/lib/comparison-math';
+import type { Locale, ProductGroup, Translate } from '@/types';
 
-export default function PriceComparisonBars({ group, baseCurrency, locale, t }) {
+interface PriceComparisonBarsProps {
+  group: ProductGroup;
+  baseCurrency: string;
+  locale: Locale;
+  t: Translate;
+}
+
+export default function PriceComparisonBars({
+  group,
+  baseCurrency,
+  locale,
+  t,
+}: PriceComparisonBarsProps) {
   if (group.products.length < 2) {
     return null;
   }

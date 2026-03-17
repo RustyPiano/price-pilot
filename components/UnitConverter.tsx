@@ -1,32 +1,47 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useState, type ChangeEvent, type KeyboardEvent } from 'react';
 import { toast } from 'react-hot-toast';
-import { useLanguage } from '../context/LanguageContext';
 import { ChevronDown, ArrowUpDown } from 'lucide-react';
+import { useLanguage } from '@/context/LanguageContext';
+import type { UnitCategory, UnitSystem } from '@/types';
 
-export default function UnitConverter({ unitSystem }) {
+interface UnitConverterProps {
+  unitSystem: UnitSystem;
+}
+
+export default function UnitConverter({ unitSystem }: UnitConverterProps) {
   const [selectedType, setSelectedType] = useState('weight');
   const [fromUnit, setFromUnit] = useState('');
   const [toUnit, setToUnit] = useState('');
   const [value, setValue] = useState('');
-  const [result, setResult] = useState(null);
+  const [result, setResult] = useState<number | null>(null);
   const { t, locale } = useLanguage();
 
   useEffect(() => {
-    const units = Object.keys(unitSystem[selectedType].conversions);
-    setFromUnit(units[0]);
-    setToUnit(units[1] || units[0]);
+    const category = unitSystem[selectedType];
+    if (!category) {
+      return;
+    }
+
+    const units = Object.keys(category.conversions);
+    setFromUnit(units[0] ?? '');
+    setToUnit(units[1] || units[0] || '');
     setValue('');
     setResult(null);
   }, [selectedType, unitSystem]);
 
   const handleConvert = () => {
-    if (!value || isNaN(value) || parseFloat(value) <= 0) {
+    if (!value || Number.isNaN(Number(value)) || parseFloat(value) <= 0) {
       toast.error(t('enterValidValue'));
       return;
     }
 
-    const fromRate = unitSystem[selectedType].conversions[fromUnit].rate;
-    const toRate = unitSystem[selectedType].conversions[toUnit].rate;
+    const selectedCategory = unitSystem[selectedType];
+    const fromRate = selectedCategory?.conversions[fromUnit]?.rate;
+    const toRate = selectedCategory?.conversions[toUnit]?.rate;
+    if (!fromRate || !toRate) {
+      return;
+    }
+
     const baseValue = parseFloat(value) * fromRate;
     const convertedValue = baseValue / toRate;
     setResult(convertedValue);
@@ -41,7 +56,7 @@ export default function UnitConverter({ unitSystem }) {
     }
   };
 
-  const formatNumber = (num) => {
+  const formatNumber = (num: number) => {
     return new Intl.NumberFormat(locale === 'zh' ? 'zh-CN' : 'en-US', { maximumSignificantDigits: 6 }).format(num);
   };
 
@@ -53,7 +68,7 @@ export default function UnitConverter({ unitSystem }) {
       </div>
 
       <div className="mb-5 flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
-        {Object.entries(unitSystem).map(([type, info]) => (
+        {(Object.entries(unitSystem) as Array<[string, UnitCategory]>).map(([type, info]) => (
           <button
             key={type}
             type="button"
@@ -73,8 +88,8 @@ export default function UnitConverter({ unitSystem }) {
               id="unit-converter-value"
               type="number"
               value={value}
-              onChange={(e) => setValue(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && handleConvert()}
+              onChange={(event: ChangeEvent<HTMLInputElement>) => setValue(event.target.value)}
+              onKeyDown={(event: KeyboardEvent<HTMLInputElement>) => event.key === 'Enter' && handleConvert()}
               className="input font-medium text-base"
               placeholder={t('value')}
               step="any"
@@ -86,10 +101,10 @@ export default function UnitConverter({ unitSystem }) {
             <select
               id="unit-converter-from"
               value={fromUnit}
-              onChange={(e) => setFromUnit(e.target.value)}
+              onChange={(event: ChangeEvent<HTMLSelectElement>) => setFromUnit(event.target.value)}
               className="input appearance-none pr-9 text-sm font-medium cursor-pointer"
             >
-              {Object.entries(unitSystem[selectedType].conversions).map(([code, unit]) => (
+              {(Object.entries(unitSystem[selectedType]?.conversions ?? {}) as Array<[string, { rate: number; displayName: string }]>).map(([code, unit]) => (
                 <option key={code} value={code}>{t(`units.${code}`) || unit.displayName}</option>
               ))}
             </select>
@@ -125,10 +140,10 @@ export default function UnitConverter({ unitSystem }) {
             <select
               id="unit-converter-to"
               value={toUnit}
-              onChange={(e) => setToUnit(e.target.value)}
+              onChange={(event: ChangeEvent<HTMLSelectElement>) => setToUnit(event.target.value)}
               className="input appearance-none pr-9 text-sm font-medium cursor-pointer"
             >
-              {Object.entries(unitSystem[selectedType].conversions).map(([code, unit]) => (
+              {(Object.entries(unitSystem[selectedType]?.conversions ?? {}) as Array<[string, { rate: number; displayName: string }]>).map(([code, unit]) => (
                 <option key={code} value={code}>{t(`units.${code}`) || unit.displayName}</option>
               ))}
             </select>

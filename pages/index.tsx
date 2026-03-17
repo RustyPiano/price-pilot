@@ -1,28 +1,46 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, type ChangeEvent, type FormEvent } from 'react';
 import Head from 'next/head';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { toast } from 'react-hot-toast';
-import LanguageToggle from '../components/LanguageToggle';
-import PageHeader from '../components/PageHeader';
-import { fetchExchangeRates } from '../constants/currencies';
-import { useLanguage } from '../context/LanguageContext';
+import LanguageToggle from '@/components/LanguageToggle';
+import PageHeader from '@/components/PageHeader';
+import { fetchExchangeRates } from '@/constants/currencies';
+import { useLanguage } from '@/context/LanguageContext';
+import { downloadAsJson, exportAllData, importFromJson } from '@/lib/data-backup';
 import {
   createComparisonList,
   ensureComparisonListsInitialized,
   getAllComparisonLists,
   removeComparisonList,
   saveComparisonList,
-} from '../lib/comparison-lists';
-import { enrichProducts, formatCurrencyAmount, getNumberLocale, getProductDisplayMeta, groupProductsByUnitType } from '../lib/comparison-math';
-import { Archive, ArrowRight, FolderOpen, Layers3, Plus, Trash2 } from 'lucide-react';
+} from '@/lib/comparison-lists';
+import { enrichProducts, formatCurrencyAmount, getNumberLocale, getProductDisplayMeta, groupProductsByUnitType } from '@/lib/comparison-math';
+import { Archive, ArrowRight, Download, FolderOpen, Layers3, Plus, Trash2, Upload, X } from 'lucide-react';
+import type { ComparisonList, EnrichedProduct, ExchangeRates, ImportStrategy } from '@/types';
+
+interface NewListDraft {
+  name: string;
+  category: string;
+}
+
+interface ListSummaryItem {
+  unitType: string;
+  baseUnit: string | null;
+  bestProduct: EnrichedProduct;
+}
+
+type SummaryMap = Record<string, ListSummaryItem[]>;
 
 export default function Home() {
   const router = useRouter();
-  const [lists, setLists] = useState([]);
+  const [lists, setLists] = useState<ComparisonList[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [summaryMap, setSummaryMap] = useState({});
-  const [newList, setNewList] = useState({ name: '', category: '' });
+  const [summaryMap, setSummaryMap] = useState<SummaryMap>({});
+  const [newList, setNewList] = useState<NewListDraft>({ name: '', category: '' });
+  const [pendingImportFile, setPendingImportFile] = useState<File | null>(null);
+  const [isImporting, setIsImporting] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
   const { t, locale } = useLanguage();
   const numberLocale = getNumberLocale(locale);
 
@@ -69,7 +87,7 @@ export default function Home() {
       }
 
       const rateEntries = await Promise.all(
-        [...new Set(listsWithProducts.map((list) => list.baseCurrency))].map(async (currency) => {
+        [...new Set(listsWithProducts.map((list) => list.baseCurrency))].map(async (currency): Promise<[string, ExchangeRates | null]> => {
           try {
             return [currency, await fetchExchangeRates(currency)];
           } catch (error) {
@@ -79,8 +97,8 @@ export default function Home() {
         })
       );
 
-      const ratesByCurrency = Object.fromEntries(rateEntries);
-      const nextSummaryMap = {};
+      const ratesByCurrency = Object.fromEntries(rateEntries) as Record<string, ExchangeRates | null>;
+      const nextSummaryMap: SummaryMap = {};
 
       for (const list of listsWithProducts) {
         const exchangeRates = ratesByCurrency[list.baseCurrency];
@@ -90,11 +108,18 @@ export default function Home() {
           enrichProducts(list.products, exchangeRates, list.baseCurrency, list.unitSystem)
         );
 
-        nextSummaryMap[list.id] = groupedProducts.slice(0, 2).map((group) => ({
-          unitType: group.unitType,
-          baseUnit: group.baseUnit,
-          bestProduct: group.products[0],
-        }));
+        nextSummaryMap[list.id] = groupedProducts
+          .slice(0, 2)
+          .flatMap((group) => {
+            const bestProduct = group.products[0];
+            return bestProduct
+              ? [{
+                  unitType: group.unitType,
+                  baseUnit: group.baseUnit,
+                  bestProduct,
+                }]
+              : [];
+          });
       }
 
       if (isMounted) {
@@ -117,7 +142,7 @@ export default function Home() {
     setLists(nextLists);
   };
 
-  const handleCreateList = async (event) => {
+  const handleCreateList = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
     try {
@@ -137,7 +162,7 @@ export default function Home() {
     }
   };
 
-  const handleToggleArchive = async (list) => {
+  const handleToggleArchive = async (list: ComparisonList) => {
     try {
       const savedList = await saveComparisonList({
         ...list,
@@ -153,7 +178,7 @@ export default function Home() {
     }
   };
 
-  const handleDeleteList = async (listId) => {
+  const handleDeleteList = async (listId: string) => {
     if (!window.confirm(t('deleteListConfirm'))) {
       return;
     }
@@ -168,12 +193,60 @@ export default function Home() {
     }
   };
 
-  const formatDate = (value) => new Intl.DateTimeFormat(numberLocale, {
+  const handleExportData = async () => {
+    try {
+      const backup = await exportAllData();
+      downloadAsJson(backup);
+      toast.success(t('backupExportSuccess'));
+    } catch (error) {
+      console.error('Failed to export data:', error);
+      toast.error(t('backupExportError'));
+    }
+  };
+
+  const handleImportInputChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0] ?? null;
+    setPendingImportFile(file);
+    event.target.value = '';
+  };
+
+  const handleImportData = async (strategy: ImportStrategy) => {
+    if (!pendingImportFile) {
+      return;
+    }
+
+    setIsImporting(true);
+
+    try {
+      const result = await importFromJson(pendingImportFile, strategy, locale);
+      setPendingImportFile(null);
+      await refreshLists();
+      toast.success(
+        t('backupImportSuccess')
+          .replace('{imported}', String(result.imported))
+          .replace('{skipped}', String(result.skipped))
+      );
+
+      if (result.errors.length > 0) {
+        toast.error(
+          t('backupImportErrors')
+            .replace('{count}', String(result.errors.length))
+        );
+      }
+    } catch (error) {
+      console.error('Failed to import backup data:', error);
+      toast.error(t('backupImportError'));
+    } finally {
+      setIsImporting(false);
+    }
+  };
+
+  const formatDate = (value: string) => new Intl.DateTimeFormat(numberLocale, {
     dateStyle: 'medium',
     timeStyle: 'short',
   }).format(new Date(value));
 
-  const renderListCard = (list) => {
+  const renderListCard = (list: ComparisonList) => {
     const summaries = summaryMap[list.id] || [];
 
     return (
@@ -296,6 +369,32 @@ export default function Home() {
                   </p>
                 </div>
               </div>
+
+              <div className="flex flex-col gap-2 sm:flex-row">
+                <button
+                  type="button"
+                  onClick={handleExportData}
+                  className="btn btn-secondary w-full text-sm sm:w-auto"
+                >
+                  <Download className="h-4 w-4" />
+                  {t('exportDataAction')}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="btn btn-secondary w-full text-sm sm:w-auto"
+                >
+                  <Upload className="h-4 w-4" />
+                  {t('importDataAction')}
+                </button>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".json,application/json"
+                  className="sr-only"
+                  onChange={handleImportInputChange}
+                />
+              </div>
             </div>
 
             <form onSubmit={handleCreateList} className="panel space-y-4 p-5 sm:p-6">
@@ -399,6 +498,68 @@ export default function Home() {
           )}
         </main>
       </div>
+
+      {pendingImportFile && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          className="fixed inset-0 z-[70] flex items-center justify-center bg-[color:rgba(11,15,22,0.55)] px-4 py-6 backdrop-blur-sm"
+          onClick={(event) => {
+            if (event.target === event.currentTarget && !isImporting) {
+              setPendingImportFile(null);
+            }
+          }}
+        >
+          <div className="panel w-full max-w-lg space-y-4 p-4 sm:p-5">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <h2 className="text-base font-semibold text-foreground">{t('importStrategyTitle')}</h2>
+                <p className="mt-1 text-sm leading-6 text-muted">
+                  {t('importStrategyBody').replace('{name}', pendingImportFile.name)}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setPendingImportFile(null)}
+                disabled={isImporting}
+                className="icon-btn h-10 w-10 flex-shrink-0"
+                aria-label={t('cancel')}
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            <div className="grid gap-3">
+              <button
+                type="button"
+                onClick={() => handleImportData('merge')}
+                disabled={isImporting}
+                className="btn btn-secondary justify-start px-4 py-4 text-left"
+              >
+                {t('importStrategyMerge')}
+              </button>
+              <button
+                type="button"
+                onClick={() => handleImportData('overwrite')}
+                disabled={isImporting}
+                className="btn btn-secondary justify-start px-4 py-4 text-left"
+              >
+                {t('importStrategyOverwrite')}
+              </button>
+              <button
+                type="button"
+                onClick={() => handleImportData('duplicate')}
+                disabled={isImporting}
+                className="btn btn-secondary justify-start px-4 py-4 text-left"
+              >
+                {t('importStrategyDuplicate')}
+              </button>
+            </div>
+
+            <p className="text-xs leading-5 text-muted">{t('importStrategyHint')}</p>
+          </div>
+        </div>
+      )}
     </>
   );
 }

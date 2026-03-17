@@ -3,21 +3,24 @@ import Head from 'next/head';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { toast } from 'react-hot-toast';
-import LanguageToggle from '../../components/LanguageToggle';
-import ListWorkspace from '../../components/ListWorkspace';
-import PageHeader from '../../components/PageHeader';
-import { useLanguage } from '../../context/LanguageContext';
+import ListWorkspace from '@/components/ListWorkspace';
+import LanguageToggle from '@/components/LanguageToggle';
+import PageHeader from '@/components/PageHeader';
+import { useLanguage } from '@/context/LanguageContext';
 import {
   ensureComparisonListsInitialized,
   getComparisonList,
   saveComparisonList,
-} from '../../lib/comparison-lists';
-import { decodeSharedComparisonList } from '../../lib/share-utils';
+} from '@/lib/comparison-lists';
+import { decodeSharedComparisonList } from '@/lib/share-utils';
+import type { ComparisonList } from '@/types';
+
+type PageStatus = 'loading' | 'ready' | 'error' | 'not_found';
 
 export default function ComparisonListPage() {
   const router = useRouter();
-  const [comparisonList, setComparisonList] = useState(null);
-  const [status, setStatus] = useState('loading');
+  const [comparisonList, setComparisonList] = useState<ComparisonList | null>(null);
+  const [status, setStatus] = useState<PageStatus>('loading');
   const { t, locale } = useLanguage();
 
   useEffect(() => {
@@ -38,13 +41,19 @@ export default function ComparisonListPage() {
             return;
           }
 
+          if (!sharedList) {
+            setStatus('error');
+            return;
+          }
+
           setComparisonList(sharedList);
           setStatus('ready');
           return;
         }
 
         await ensureComparisonListsInitialized(locale);
-        const nextList = await getComparisonList(router.query.id);
+        const listId = typeof router.query.id === 'string' ? router.query.id : '';
+        const nextList = await getComparisonList(listId);
 
         if (!isMounted) {
           return;
@@ -72,7 +81,7 @@ export default function ComparisonListPage() {
     };
   }, [router.isReady, router.query.id, router.query.share, locale]);
 
-  const handleSaveList = async (nextList) => {
+  const handleSaveList = async (nextList: ComparisonList) => {
     setComparisonList(nextList);
 
     try {

@@ -1,9 +1,22 @@
 import { useEffect, useMemo, useState } from 'react';
-import { formatCurrencyAmount, getProductDisplayMeta } from '../lib/comparison-math';
+import { formatCurrencyAmount, getProductDisplayMeta } from '@/lib/comparison-math';
+import type { Locale, ProductGroup, Translate } from '@/types';
 
-const getDefaultConsumption = (unitType) => unitType === 'piece' ? '10' : '1';
+const getDefaultConsumption = (unitType: string) => (unitType === 'piece' ? '10' : '1');
 
-export default function SavingsCalculator({ group, baseCurrency, locale, t }) {
+interface SavingsCalculatorProps {
+  group: ProductGroup;
+  baseCurrency: string;
+  locale: Locale;
+  t: Translate;
+}
+
+export default function SavingsCalculator({
+  group,
+  baseCurrency,
+  locale,
+  t,
+}: SavingsCalculatorProps) {
   const [monthlyConsumption, setMonthlyConsumption] = useState(getDefaultConsumption(group.unitType));
 
   useEffect(() => {
@@ -22,6 +35,10 @@ export default function SavingsCalculator({ group, baseCurrency, locale, t }) {
 
     const bestProduct = group.products[0];
     const priciestProduct = group.products[group.products.length - 1];
+    if (!bestProduct || !priciestProduct) {
+      return null;
+    }
+
     const monthlySavings = Math.max(0, (priciestProduct.unitPrice - bestProduct.unitPrice) * usage);
     const annualSavings = monthlySavings * 12;
     const savingsPercent = priciestProduct.unitPrice === 0
@@ -99,7 +116,7 @@ export default function SavingsCalculator({ group, baseCurrency, locale, t }) {
             </div>
           </div>
 
-          {Number.isFinite(calculation.finishDays) && (
+          {typeof calculation.finishDays === 'number' && Number.isFinite(calculation.finishDays) && (
             <p className="text-sm leading-6 text-muted">
               {t('finishUsageHint')
                 .replace('{name}', getProductDisplayMeta(calculation.bestProduct, locale).displayName)

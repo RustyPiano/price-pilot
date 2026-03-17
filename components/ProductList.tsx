@@ -1,17 +1,25 @@
-import { useState, useEffect, useMemo } from 'react';
-import { fetchExchangeRates } from '../constants/currencies';
-import ProductEditorForm from './ProductEditorForm';
-import PriceComparisonBars from './PriceComparisonBars';
-import SavingsCalculator from './SavingsCalculator';
-import { useLanguage } from '../context/LanguageContext';
-import { enrichProducts, getNumberLocale, getProductDisplayMeta, groupProductsByUnitType } from '../lib/comparison-math';
+import { useEffect, useMemo, useState } from 'react';
+import { fetchExchangeRates } from '@/constants/currencies';
+import PriceComparisonBars from '@/components/PriceComparisonBars';
+import ProductEditorForm from '@/components/ProductEditorForm';
+import SavingsCalculator from '@/components/SavingsCalculator';
+import { useLanguage } from '@/context/LanguageContext';
+import { enrichProducts, getNumberLocale, getProductDisplayMeta, groupProductsByUnitType } from '@/lib/comparison-math';
 import { X, Trophy, TrendingDown, ShoppingCart, Pencil, Sparkles, AlertTriangle, RotateCw, WifiOff } from 'lucide-react';
+import type { EnrichedProduct, ExchangeRates, Product, ProductGroup, ProductInput, UnitSystem } from '@/types';
 
-const getPriceDifferenceDisplay = (sortedProducts) => {
+const getPriceDifferenceDisplay = (sortedProducts: EnrichedProduct[]) => {
   if (sortedProducts.length < 2) return null;
 
-  const lowestPrice = sortedProducts[0].unitPrice;
-  const highestPrice = sortedProducts[sortedProducts.length - 1].unitPrice;
+  const lowestProduct = sortedProducts[0];
+  const highestProduct = sortedProducts[sortedProducts.length - 1];
+
+  if (!lowestProduct || !highestProduct) {
+    return null;
+  }
+
+  const lowestPrice = lowestProduct.unitPrice;
+  const highestPrice = highestProduct.unitPrice;
 
   if (lowestPrice === 0) {
     return highestPrice === 0 ? '0%' : '∞';
@@ -19,6 +27,17 @@ const getPriceDifferenceDisplay = (sortedProducts) => {
 
   return `${((highestPrice / lowestPrice - 1) * 100).toFixed(0)}%`;
 };
+
+interface ProductListProps {
+  products: Product[];
+  baseCurrency: string;
+  onRemoveProduct: (productId: string) => void;
+  onUpdateProduct: (productId: string, product: ProductInput) => void;
+  onLoadSampleData: () => void;
+  pendingProductIds?: string[];
+  recentUnits?: string[];
+  unitSystem: UnitSystem;
+}
 
 export default function ProductList({
   products,
@@ -29,14 +48,14 @@ export default function ProductList({
   pendingProductIds = [],
   recentUnits = [],
   unitSystem,
-}) {
-  const [exchangeRates, setExchangeRates] = useState(null);
+}: ProductListProps) {
+  const [exchangeRates, setExchangeRates] = useState<ExchangeRates | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [loadError, setLoadError] = useState(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [isUsingCachedRates, setIsUsingCachedRates] = useState(false);
   const [retryCount, setRetryCount] = useState(0);
-  const [editingProductId, setEditingProductId] = useState(null);
-  const [comparisonMode, setComparisonMode] = useState('grouped');
+  const [editingProductId, setEditingProductId] = useState<string | null>(null);
+  const [comparisonMode, setComparisonMode] = useState<'grouped' | 'combined'>('grouped');
   const { t, locale } = useLanguage();
   const numberLocale = getNumberLocale(locale);
   const hasProducts = products.length > 0;
@@ -87,7 +106,7 @@ export default function ProductList({
           setLoadError(t('usingCachedRates'));
         } else if (!controller.signal.aborted) {
           setExchangeRates(null);
-          setLoadError(error.name === 'AbortError' ? t('fetchRatesTimeout') : t('fetchRatesFail'));
+          setLoadError(error instanceof Error && error.name === 'AbortError' ? t('fetchRatesTimeout') : t('fetchRatesFail'));
         }
       }
 
@@ -119,7 +138,7 @@ export default function ProductList({
 
   const hasMixedGroups = groupedProducts.length > 1;
 
-  const displayedGroups = useMemo(() => {
+  const displayedGroups = useMemo<ProductGroup[]>(() => {
     if (comparisonMode === 'combined' && hasMixedGroups) {
       return [
         {
@@ -133,16 +152,16 @@ export default function ProductList({
     return groupedProducts;
   }, [comparisonMode, hasMixedGroups, allSortedProducts, groupedProducts]);
 
-  const formatPrice = (price) => new Intl.NumberFormat(numberLocale, {
+  const formatPrice = (price: number) => new Intl.NumberFormat(numberLocale, {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   }).format(price);
 
-  const formatGroupCount = (count) => (
+  const formatGroupCount = (count: number) => (
     locale === 'zh' ? `${count} 个商品` : `${count} item${count === 1 ? '' : 's'}`
   );
 
-  const handleEditSubmit = (productId, updatedProduct) => {
+  const handleEditSubmit = (productId: string, updatedProduct: ProductInput) => {
     onUpdateProduct(productId, updatedProduct);
     setEditingProductId(null);
   };

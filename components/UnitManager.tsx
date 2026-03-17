@@ -1,17 +1,34 @@
-import { useState } from 'react';
+import { useState, type ChangeEvent, type FormEvent } from 'react';
 import { toast } from 'react-hot-toast';
-import { defaultUnitSystem } from '../constants/unitSystem';
-import { useLanguage } from '../context/LanguageContext';
+import { defaultUnitSystem } from '@/constants/unitSystem';
 import { X, Plus } from 'lucide-react';
+import { useLanguage } from '@/context/LanguageContext';
+import type { UnitCategory, UnitSystem } from '@/types';
 
-export default function UnitManager({ unitSystem, onUpdateUnits }) {
+interface UnitManagerProps {
+  unitSystem: UnitSystem;
+  onUpdateUnits: (unitSystem: UnitSystem) => void;
+}
+
+interface NewUnitDraft {
+  code: string;
+  displayName: string;
+  rate: string;
+}
+
+export default function UnitManager({ unitSystem, onUpdateUnits }: UnitManagerProps) {
   const [selectedType, setSelectedType] = useState('weight');
   const [showAddUnit, setShowAddUnit] = useState(false);
-  const [newUnit, setNewUnit] = useState({ code: '', displayName: '', rate: '' });
+  const [newUnit, setNewUnit] = useState<NewUnitDraft>({ code: '', displayName: '', rate: '' });
   const { t, locale } = useLanguage();
+  const selectedCategory = unitSystem[selectedType];
 
-  const handleAddUnit = (e) => {
-    e.preventDefault();
+  const handleAddUnit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
+    if (!selectedCategory) {
+      return;
+    }
 
     if (!newUnit.code || !newUnit.displayName || !newUnit.rate) {
       toast.error(t('fillComplete'));
@@ -25,7 +42,12 @@ export default function UnitManager({ unitSystem, onUpdateUnits }) {
     }
 
     const updatedSystem = structuredClone(unitSystem);
-    updatedSystem[selectedType].conversions[newUnit.code] = { rate, displayName: newUnit.displayName };
+    const updatedCategory = updatedSystem[selectedType];
+    if (!updatedCategory) {
+      return;
+    }
+
+    updatedCategory.conversions[newUnit.code] = { rate, displayName: newUnit.displayName };
 
     onUpdateUnits(updatedSystem);
     setNewUnit({ code: '', displayName: '', rate: '' });
@@ -33,14 +55,23 @@ export default function UnitManager({ unitSystem, onUpdateUnits }) {
     toast.success(t('unitAdded'));
   };
 
-  const handleDeleteUnit = (unitCode) => {
-    if (unitCode === unitSystem[selectedType].baseUnit) {
+  const handleDeleteUnit = (unitCode: string) => {
+    if (!selectedCategory) {
+      return;
+    }
+
+    if (unitCode === selectedCategory.baseUnit) {
       toast.error(t('cannotDeleteBase'));
       return;
     }
 
     const updatedSystem = structuredClone(unitSystem);
-    delete updatedSystem[selectedType].conversions[unitCode];
+    const updatedCategory = updatedSystem[selectedType];
+    if (!updatedCategory) {
+      return;
+    }
+
+    delete updatedCategory.conversions[unitCode];
     onUpdateUnits(updatedSystem);
     toast.success(t('unitDeleted'));
   };
@@ -68,7 +99,7 @@ export default function UnitManager({ unitSystem, onUpdateUnits }) {
       </div>
 
       <div className="mb-5 flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
-        {Object.entries(unitSystem).map(([type, info]) => (
+        {(Object.entries(unitSystem) as Array<[string, UnitCategory]>).map(([type, info]) => (
           <button
             key={type}
             type="button"
@@ -81,15 +112,15 @@ export default function UnitManager({ unitSystem, onUpdateUnits }) {
       </div>
 
       <div className="mb-5 space-y-2">
-        {Object.entries(unitSystem[selectedType].conversions).map(([code, unit]) => (
+        {(Object.entries(selectedCategory?.conversions ?? {}) as Array<[string, { rate: number; displayName: string }]>).map(([code, unit]) => (
           <div key={code} className="subpanel flex items-center justify-between p-3">
             <div className="min-w-0 flex flex-wrap items-center gap-2">
               <span className="font-semibold text-foreground">{t(`units.${code}`) || unit.displayName}</span>
               <span className="rounded-full bg-surface px-2.5 py-1 text-xs font-medium text-muted">
-                {code} = {unit.rate} {unitSystem[selectedType].baseUnit}
+                {code} = {unit.rate} {selectedCategory?.baseUnit ?? ''}
               </span>
             </div>
-            {code !== unitSystem[selectedType].baseUnit && (
+            {code !== selectedCategory?.baseUnit && (
               <button
                 type="button"
                 onClick={() => handleDeleteUnit(code)}
@@ -120,7 +151,7 @@ export default function UnitManager({ unitSystem, onUpdateUnits }) {
               id="new-unit-code"
               type="text"
               value={newUnit.code}
-              onChange={(e) => setNewUnit({ ...newUnit, code: e.target.value })}
+              onChange={(event: ChangeEvent<HTMLInputElement>) => setNewUnit({ ...newUnit, code: event.target.value })}
               className="input font-medium text-sm"
               placeholder={t('codePlaceholder')}
             />
@@ -129,7 +160,7 @@ export default function UnitManager({ unitSystem, onUpdateUnits }) {
               id="new-unit-name"
               type="text"
               value={newUnit.displayName}
-              onChange={(e) => setNewUnit({ ...newUnit, displayName: e.target.value })}
+              onChange={(event: ChangeEvent<HTMLInputElement>) => setNewUnit({ ...newUnit, displayName: event.target.value })}
               className="input font-medium text-sm"
               placeholder={t('namePlaceholder')}
             />
@@ -139,7 +170,7 @@ export default function UnitManager({ unitSystem, onUpdateUnits }) {
               type="number"
               step="any"
               value={newUnit.rate}
-              onChange={(e) => setNewUnit({ ...newUnit, rate: e.target.value })}
+              onChange={(event: ChangeEvent<HTMLInputElement>) => setNewUnit({ ...newUnit, rate: event.target.value })}
               className="input font-medium text-sm"
               placeholder={t('ratePlaceholder')}
             />
