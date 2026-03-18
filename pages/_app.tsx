@@ -6,8 +6,13 @@ import '../styles/globals.css';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import { LanguageProvider } from '@/context/LanguageContext';
 import { ThemeProvider } from '@/context/ThemeContext';
+import type { Locale } from '@/types';
 
-function MyApp({ Component, pageProps }: AppProps) {
+type AppPageProps = {
+  initialLocale?: Locale;
+};
+
+function MyApp({ Component, pageProps }: AppProps<AppPageProps>) {
   useEffect(() => {
     if (!('serviceWorker' in navigator)) {
       return;
@@ -35,7 +40,7 @@ function MyApp({ Component, pageProps }: AppProps) {
   return (
     <ErrorBoundary>
       <ThemeProvider>
-        <LanguageProvider>
+        <LanguageProvider initialLocale={pageProps.initialLocale}>
           <main className="app-shell">
             <Head>
               <link rel="manifest" href="/manifest.json" />

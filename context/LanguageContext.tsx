@@ -16,10 +16,29 @@ function getBrowserLocale(): Locale {
   return window.navigator.language.startsWith('zh') ? 'zh' : 'en';
 }
 
-export function LanguageProvider({ children }: { children: ReactNode }) {
-  const [locale, setLocale] = useState<Locale>('zh');
+export function LanguageProvider({
+  children,
+  initialLocale = 'zh',
+}: {
+  children: ReactNode;
+  initialLocale?: Locale;
+}) {
+  const [locale, setLocale] = useState<Locale>(initialLocale);
 
   useEffect(() => {
+    const pathname = window.location.pathname;
+    if (pathname === '/') {
+      setLocale('zh');
+      window.localStorage.setItem('locale', 'zh');
+      return;
+    }
+
+    if (pathname === '/en') {
+      setLocale('en');
+      window.localStorage.setItem('locale', 'en');
+      return;
+    }
+
     const savedLocale = window.localStorage.getItem('locale');
     if (savedLocale === 'zh' || savedLocale === 'en') {
       setLocale(savedLocale);
@@ -27,10 +46,10 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     }
 
     const browserLocale = getBrowserLocale();
-    if (browserLocale !== 'zh') {
+    if (browserLocale !== initialLocale) {
       setLocale(browserLocale);
     }
-  }, []);
+  }, [initialLocale]);
 
   useEffect(() => {
     document.documentElement.lang = locale === 'zh' ? 'zh-CN' : 'en-US';

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type ChangeEvent, type FormEvent } from 'react';
 import Head from 'next/head';
+import type { GetStaticProps } from 'next';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { toast } from 'react-hot-toast';
@@ -16,8 +17,17 @@ import {
   saveComparisonList,
 } from '@/lib/comparison-lists';
 import { enrichProducts, formatCurrencyAmount, getNumberLocale, getProductDisplayMeta, groupProductsByUnitType } from '@/lib/comparison-math';
+import {
+  buildAbsoluteUrl,
+  DEFAULT_SITE_ORIGIN,
+  getAlternateHomeLinks,
+  getHomeDescription,
+  getHomeTitle,
+  seoGuideContent,
+  SITE_NAME,
+} from '@/lib/seo';
 import { Archive, ArrowRight, Download, FolderOpen, Layers3, Plus, Trash2, Upload, X } from 'lucide-react';
-import type { ComparisonList, EnrichedProduct, ExchangeRates, ImportStrategy } from '@/types';
+import type { ComparisonList, EnrichedProduct, ExchangeRates, ImportStrategy, Locale } from '@/types';
 
 interface NewListDraft {
   name: string;
@@ -32,7 +42,13 @@ interface ListSummaryItem {
 
 type SummaryMap = Record<string, ListSummaryItem[]>;
 
-export default function Home() {
+export const getStaticProps: GetStaticProps<{ initialLocale: Locale }> = async () => ({
+  props: {
+    initialLocale: 'zh',
+  },
+});
+
+export function HomePage() {
   const router = useRouter();
   const [lists, setLists] = useState<ComparisonList[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -43,6 +59,65 @@ export default function Home() {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const { t, locale } = useLanguage();
   const numberLocale = getNumberLocale(locale);
+  const homePath = router.pathname === '/en' ? '/en' : '/';
+  const canonicalUrl = buildAbsoluteUrl(DEFAULT_SITE_ORIGIN, homePath);
+  const siteRootUrl = DEFAULT_SITE_ORIGIN ? buildAbsoluteUrl(DEFAULT_SITE_ORIGIN, '/') : null;
+  const homeAbsoluteUrl = DEFAULT_SITE_ORIGIN ? buildAbsoluteUrl(DEFAULT_SITE_ORIGIN, homePath) : null;
+  const alternateLinks = getAlternateHomeLinks(DEFAULT_SITE_ORIGIN);
+  const guideContent = seoGuideContent[locale];
+  const homeTitle = getHomeTitle(locale);
+  const homeDescription = getHomeDescription(locale);
+  const localeTag = locale === 'zh' ? 'zh_CN' : 'en_US';
+  const answerEyebrow = locale === 'zh' ? '搜索与 AI 摘要' : 'Search and AI Summary';
+  const structuredData = useMemo(() => ([
+    {
+      '@context': 'https://schema.org',
+      '@type': 'WebSite',
+      name: SITE_NAME,
+      inLanguage: ['zh-CN', 'en-US'],
+      ...(siteRootUrl ? { url: siteRootUrl } : {}),
+    },
+    {
+      '@context': 'https://schema.org',
+      '@type': 'SoftwareApplication',
+      name: SITE_NAME,
+      applicationCategory: 'UtilitiesApplication',
+      operatingSystem: 'Web',
+      inLanguage: locale === 'zh' ? 'zh-CN' : 'en-US',
+      description: homeDescription,
+      offers: {
+        '@type': 'Offer',
+        price: '0',
+        priceCurrency: locale === 'zh' ? 'CNY' : 'USD',
+      },
+      featureList: guideContent.useCases,
+      ...(homeAbsoluteUrl ? { url: homeAbsoluteUrl } : {}),
+    },
+    {
+      '@context': 'https://schema.org',
+      '@type': 'HowTo',
+      name: guideContent.stepsTitle,
+      description: guideContent.answerBody,
+      step: guideContent.steps.map((step, index) => ({
+        '@type': 'HowToStep',
+        position: index + 1,
+        name: step,
+        text: step,
+      })),
+    },
+    {
+      '@context': 'https://schema.org',
+      '@type': 'FAQPage',
+      mainEntity: guideContent.faqs.map((item) => ({
+        '@type': 'Question',
+        name: item.question,
+        acceptedAnswer: {
+          '@type': 'Answer',
+          text: item.answer,
+        },
+      })),
+    },
+  ]), [guideContent, homeAbsoluteUrl, homeDescription, locale, siteRootUrl]);
 
   useEffect(() => {
     let isMounted = true;
@@ -325,16 +400,32 @@ export default function Home() {
   return (
     <>
       <Head>
-        <title>{locale === 'zh' ? 'Price Pilot · 商品单价对比工具' : 'Price Pilot · Unit Price Comparison'}</title>
-        <meta name="description" content={t('metaDescription')} />
+        <title>{homeTitle}</title>
+        <meta name="description" content={homeDescription} />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <meta name="keywords" content={locale === 'zh' ? '单价对比,比价工具,超市比价,单价计算,性价比,商品对比,价格对比' : 'unit price comparison,price per unit,grocery comparison,unit cost calculator,shopping comparison'} />
+        <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1" />
+        <meta name="application-name" content={SITE_NAME} />
+        <meta property="og:site_name" content={SITE_NAME} />
         <meta property="og:type" content="website" />
-        <meta property="og:title" content={locale === 'zh' ? 'Price Pilot · 商品单价对比工具' : 'Price Pilot · Unit Price Comparison'} />
-        <meta property="og:description" content={t('metaDescription')} />
+        <meta property="og:title" content={homeTitle} />
+        <meta property="og:description" content={homeDescription} />
+        <meta property="og:url" content={canonicalUrl} />
+        <meta property="og:locale" content={localeTag} />
+        <meta property="og:locale:alternate" content={locale === 'zh' ? 'en_US' : 'zh_CN'} />
         <meta name="twitter:card" content="summary" />
-        <meta name="twitter:title" content={locale === 'zh' ? 'Price Pilot · 商品单价对比工具' : 'Price Pilot · Unit Price Comparison'} />
-        <meta name="twitter:description" content={t('metaDescription')} />
+        <meta name="twitter:title" content={homeTitle} />
+        <meta name="twitter:description" content={homeDescription} />
+        <link rel="canonical" href={canonicalUrl} />
+        {alternateLinks.map((link) => (
+          <link key={link.hrefLang} rel="alternate" hrefLang={link.hrefLang} href={link.href} />
+        ))}
+        {structuredData.map((item, index) => (
+          <script
+            key={`ld-json-${index}`}
+            type="application/ld+json"
+            dangerouslySetInnerHTML={{ __html: JSON.stringify(item) }}
+          />
+        ))}
       </Head>
 
       <div className="page-shell">
@@ -496,6 +587,55 @@ export default function Home() {
               )}
             </>
           )}
+
+          <section className="grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
+            <article className="panel space-y-3 p-5 sm:p-6">
+              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted">{answerEyebrow}</p>
+              <h2 className="text-2xl font-semibold leading-tight text-foreground sm:text-3xl">
+                {guideContent.answerTitle}
+              </h2>
+              <p className="section-description max-w-3xl">{guideContent.answerBody}</p>
+            </article>
+
+            <section className="panel space-y-4 p-5 sm:p-6">
+              <h2 className="section-title">{guideContent.stepsTitle}</h2>
+              <ol className="space-y-3 text-sm leading-6 text-muted">
+                {guideContent.steps.map((step, index) => (
+                  <li key={step} className="flex items-start gap-3">
+                    <span className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-surface-100 text-xs font-semibold text-brand">
+                      {index + 1}
+                    </span>
+                    <span>{step}</span>
+                  </li>
+                ))}
+              </ol>
+            </section>
+          </section>
+
+          <section className="grid gap-4 lg:grid-cols-2">
+            <section className="panel space-y-4 p-5 sm:p-6">
+              <h2 className="section-title">{guideContent.useCasesTitle}</h2>
+              <ul className="space-y-3 text-sm leading-6 text-muted">
+                {guideContent.useCases.map((item) => (
+                  <li key={item} className="subpanel p-3">
+                    {item}
+                  </li>
+                ))}
+              </ul>
+            </section>
+
+            <section className="panel space-y-4 p-5 sm:p-6">
+              <h2 className="section-title">{guideContent.faqTitle}</h2>
+              <div className="space-y-3">
+                {guideContent.faqs.map((item) => (
+                  <article key={item.question} className="subpanel space-y-2 p-4">
+                    <h3 className="text-sm font-semibold text-foreground">{item.question}</h3>
+                    <p className="text-sm leading-6 text-muted">{item.answer}</p>
+                  </article>
+                ))}
+              </div>
+            </section>
+          </section>
         </main>
       </div>
 
@@ -563,3 +703,5 @@ export default function Home() {
     </>
   );
 }
+
+export default HomePage;
