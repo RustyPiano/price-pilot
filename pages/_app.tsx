@@ -1,6 +1,7 @@
 import Head from 'next/head';
 import type { AppProps } from 'next/app';
 import { useEffect } from 'react';
+import { Analytics } from '@vercel/analytics/next';
 import AppToaster from '@/components/AppToaster';
 import '../styles/globals.css';
 import ErrorBoundary from '@/components/ErrorBoundary';
@@ -62,6 +63,7 @@ function MyApp({ Component, pageProps }: AppProps<AppPageProps>) {
               }}
             />
             <Component {...pageProps} />
+            {process.env.NODE_ENV === 'production' ? <Analytics /> : null}
           </main>
         </LanguageProvider>
       </ThemeProvider>
