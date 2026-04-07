@@ -111,6 +111,8 @@ export default function ComparisonListPage() {
           subtitle={t('listDetailSubtitle')}
           backHref="/"
           backLabel={t('backToLists')}
+          homeHref="https://rustypiano.com"
+          homeLabel={t('personalWebsite')}
         >
           <LanguageToggle />
         </PageHeader>

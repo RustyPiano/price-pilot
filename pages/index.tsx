@@ -429,7 +429,11 @@ export function HomePage() {
       </Head>
 
       <div className="page-shell">
-        <PageHeader title={t('comparisonListsTitle')}>
+        <PageHeader
+          title={t('comparisonListsTitle')}
+          homeHref="https://rustypiano.com"
+          homeLabel={t('personalWebsite')}
+        >
           <LanguageToggle />
         </PageHeader>
 

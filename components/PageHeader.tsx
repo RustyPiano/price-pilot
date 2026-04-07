@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import type { ReactNode } from 'react';
-import { ArrowLeft, Monitor, Moon, Sun } from 'lucide-react';
+import { ArrowLeft, ExternalLink, Monitor, Moon, Sun } from 'lucide-react';
 import { useLanguage } from '@/context/LanguageContext';
 import { useTheme } from '@/context/ThemeContext';
 import type { Theme } from '@/types';
@@ -10,6 +10,8 @@ interface PageHeaderProps {
   subtitle?: string;
   backHref?: string;
   backLabel?: string;
+  homeHref?: string;
+  homeLabel?: string;
   children?: ReactNode;
 }
 
@@ -18,6 +20,8 @@ export default function PageHeader({
   subtitle,
   backHref,
   backLabel,
+  homeHref,
+  homeLabel,
   children,
 }: PageHeaderProps) {
   const { t } = useLanguage();
@@ -63,6 +67,19 @@ export default function PageHeader({
 
         {children ? (
           <div className="flex items-center gap-2">
+            {homeHref && (
+              <a
+                href={homeHref}
+                target="_blank"
+                rel="noreferrer noopener"
+                className="btn btn-secondary px-3 text-sm"
+                aria-label={homeLabel ?? homeHref}
+                title={homeLabel ?? homeHref}
+              >
+                <ExternalLink className="h-4 w-4" />
+                <span className="hidden sm:inline">{homeLabel}</span>
+              </a>
+            )}
             <button
               type="button"
               onClick={() => setTheme(nextTheme)}
@@ -76,6 +93,19 @@ export default function PageHeader({
           </div>
         ) : (
           <div className="flex items-center gap-2">
+            {homeHref && (
+              <a
+                href={homeHref}
+                target="_blank"
+                rel="noreferrer noopener"
+                className="btn btn-secondary px-3 text-sm"
+                aria-label={homeLabel ?? homeHref}
+                title={homeLabel ?? homeHref}
+              >
+                <ExternalLink className="h-4 w-4" />
+                <span className="hidden sm:inline">{homeLabel}</span>
+              </a>
+            )}
             <button
               type="button"
               onClick={() => setTheme(nextTheme)}
