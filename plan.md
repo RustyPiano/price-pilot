@@ -7,19 +7,24 @@
 
 ## 项目现状摘要
 
+> 更新于 2026-07-07（阶段四完成后）。易变的精确数字（行数/组件数）只作量级参考，别当契约维护；权威进度看下方各阶段「当前状态」。
+
 | 指标 | 当前值 |
 |------|--------|
-| 源代码行数 | ~5,000+ 行 TS/TSX |
-| 组件数 | 12 个 |
-| 页面数 | 3 个路由 (首页 + 列表详情 + 汇率 API) |
-| 测试覆盖率 | 已接入 Vitest, 整体 81.46%, 核心 `lib/` 模块 86.91% |
-| 类型系统 | 已完成 TypeScript 迁移 (`strict: true`) |
+| 源代码规模 | ~6,800 行 TS/TSX（不含测试） |
+| 页面路由 | 首页 + 列表详情 + 英文路由 + 汇率 API + SEO 路由 |
+| 测试 | Vitest, 12 文件 / 47 用例全绿 |
+| 类型系统 | 全量 TypeScript (`strict: true`) |
 | 路由方案 | Pages Router (Next.js 15) |
-| 状态管理 | useState + prop drilling + 1 个 Context |
-| 数据持久化 | IndexedDB (主) + localStorage (缓存/偏好) |
-| 主题 | 已支持 light / dark / system 三态 |
-| PWA | manifest 存在但 Service Worker 被主动注销 |
-| 外部依赖 | 6 个生产依赖 + TypeScript / Vitest 开发工具链 |
+| 状态管理 | useState + 自定义 hooks + Language/Theme 两个 Context |
+| 数据持久化 | IndexedDB (清单) + localStorage (缓存/偏好)，**无后端/无数据库** |
+| 主题 | light / dark / system 三态 |
+| 视觉语言 | 「精密账本」(一层容器 + 发丝线 + 整行染色 + 等宽数字)，见阶段四 |
+| PWA | manifest + home shortcut；Service Worker 仍被注销 (离线支持见 2.3，未做) |
+| 外部依赖 | 7 个生产依赖 + Vitest / TypeScript 工具链 |
+
+**已交付里程碑**：阶段一（TS 迁移 / 测试 / 暗色 / 备份 / 汇率代理）✓ · 阶段二 2.1（组件拆分）✓ · **阶段三 3.1 快速对比首屏 ✓** · **阶段四 视觉重设计 + 小票分享 ✓**。
+**下一步候选**：阶段二 2.2 App Router / 2.3 PWA 离线 / 2.4 价格历史；阶段三 3.2 快速对比增强。
 
 ---
 
