@@ -10,8 +10,7 @@
 ## 技术栈与架构硬约束
 
 - Next.js 15（**Pages Router**，非 App Router）+ React 19 + TypeScript（`strict`）+ Tailwind 3 + Vitest。
-- **无后端、无数据库、无账号**。数据只存浏览器：IndexedDB（清单，库名 `price-pilot`）+ localStorage（偏好/汇率缓存）。
-  - ⚠️ 仓库里 `.agents/skills/` 装了个 `supabase-postgres-best-practices` skill——**与本项目无关**（本项目没有任何 Postgres/后端），不要据此以为存在数据库层。
+- **无后端、无数据库、无账号**。数据只存浏览器：IndexedDB（清单，库名 `price-pilot`）+ localStorage（偏好/汇率缓存）。任何涉及后端/数据库的 skill 或建议都不适用于本项目。
 - 唯一的服务端代码是 `pages/api/exchange-rates.ts`（汇率 API 代理，需 `EXCHANGE_RATE_API_KEY`，可选；不配也能用单币种）。
 
 ## 目录地图
