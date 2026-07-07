@@ -145,3 +145,15 @@ export interface ImagePreview {
   fileName: string;
   url: string;
 }
+
+export interface QuickCompareRow {
+  id: string;
+  price: string;
+  quantity: string;
+}
+
+export interface QuickRowResult {
+  unitPrice: number | null;
+  isBest: boolean;
+  pctAboveBest: number | null;
+}

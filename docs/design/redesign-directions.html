@@ -1,0 +1,355 @@
+<title>Price Pilot · 三个重设计方向</title>
+<style>
+  :root {
+    --pg-bg: #f3f1ec; --pg-text: #21252b; --pg-muted: #6e6a5e;
+    --pg-border: #ddd8cc; --pg-accent: #0e7268; --pg-surface: #ffffff;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --pg-bg: #101216; --pg-text: #ebeef2; --pg-muted: #a3a89f; --pg-border: #32363e; --pg-accent: #2fd0bc; --pg-surface: #191c22; color-scheme: dark; }
+  }
+  :root[data-theme='dark'] { --pg-bg: #101216; --pg-text: #ebeef2; --pg-muted: #a3a89f; --pg-border: #32363e; --pg-accent: #2fd0bc; --pg-surface: #191c22; color-scheme: dark; }
+  :root[data-theme='light'] { --pg-bg: #f3f1ec; --pg-text: #21252b; --pg-muted: #6e6a5e; --pg-border: #ddd8cc; --pg-accent: #0e7268; --pg-surface: #ffffff; color-scheme: light; }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--pg-bg); color: var(--pg-text);
+    font-family: 'SF Pro Text', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', -apple-system, sans-serif;
+    line-height: 1.65; -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 1280px; margin: 0 auto; padding: 3rem 1.25rem 5rem; }
+  h1, h2, h3 { margin: 0; letter-spacing: -0.02em; line-height: 1.2; text-wrap: balance; }
+  .eyebrow { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.16em; color: var(--pg-accent); text-transform: uppercase; }
+  .page-title { font-size: clamp(1.6rem, 3.2vw, 2.3rem); margin-top: 0.5rem; }
+  .page-lede { max-width: 46rem; color: var(--pg-muted); margin: 0.9rem 0 0; font-size: 0.95rem; }
+  .page-lede strong { color: var(--pg-text); }
+
+  .dir-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 2.5rem 1.75rem; margin-top: 2.5rem; align-items: start; }
+  .dir { max-width: 460px; width: 100%; justify-self: center; display: flex; flex-direction: column; gap: 0.9rem; }
+  .dir-head { display: flex; align-items: baseline; gap: 0.6rem; flex-wrap: wrap; }
+  .dir-kicker { font-size: 0.72rem; font-weight: 800; letter-spacing: 0.12em; color: var(--pg-muted); }
+  .dir-name { font-size: 1.15rem; font-weight: 800; }
+  .pill-reco { display: inline-flex; padding: 0.18rem 0.6rem; border-radius: 999px; background: var(--pg-accent); color: var(--pg-bg); font-size: 0.7rem; font-weight: 700; }
+  .dir-pitch { margin: 0; font-size: 0.86rem; color: var(--pg-muted); }
+  .dir-pitch strong { color: var(--pg-text); }
+  .swatches { display: flex; gap: 0.4rem; }
+  .sw { flex: 1; height: 2rem; border-radius: 7px; border: 1px solid rgba(0,0,0,0.08); position: relative; }
+  .sw span { position: absolute; left: 0.35rem; bottom: 0.15rem; font-size: 0.55rem; font-weight: 600; letter-spacing: 0.02em; font-family: ui-monospace, monospace; }
+  .dir-cost { margin: 0; font-size: 0.78rem; color: var(--pg-muted); }
+
+  /* 所有 mock 固定各自的浅色世界（刻意单主题，方向本身的世界观） */
+  .mock { border-radius: 18px; overflow: hidden; box-shadow: 0 24px 50px -32px rgba(20, 24, 30, 0.4); border: 1px solid var(--pg-border); }
+
+  /* ============================================================
+     方向 A · 电子小票 —— 整个应用是一张会计算的小票
+     ============================================================ */
+  .mA { background: #fbfaf5; color: #26241e; font-family: ui-monospace, 'SF Mono', 'Menlo', 'PingFang SC', monospace; padding: 0 0 1.4rem; }
+  .mA .tear { height: 12px; background: linear-gradient(-45deg, transparent 6px, #fbfaf5 0) 0 0 / 12px 100%, linear-gradient(45deg, transparent 6px, #fbfaf5 0) 6px 0 / 12px 100%; background-repeat: repeat-x; margin-top: -1px; filter: drop-shadow(0 1px 0 rgba(0,0,0,0.06)); }
+  .mA .inner { padding: 1.5rem 1.4rem 0; }
+  .mA .brand { text-align: center; font-weight: 800; letter-spacing: 0.3em; font-size: 0.95rem; }
+  .mA .brand-sub { text-align: center; font-size: 0.62rem; letter-spacing: 0.18em; color: #8d8779; margin-top: 0.25rem; }
+  .mA .rule { border: none; border-top: 1.5px dashed #d8d3c2; margin: 1rem 0; }
+  .mA .sec-label { font-size: 0.62rem; letter-spacing: 0.22em; color: #8d8779; margin-bottom: 0.6rem; }
+  .mA .line { display: flex; align-items: baseline; gap: 0.45rem; padding: 0.42rem 0; font-size: 0.86rem; position: relative; }
+  .mA .line .nm { white-space: nowrap; font-weight: 700; }
+  .mA .line .spec { color: #8d8779; font-size: 0.74rem; white-space: nowrap; }
+  .mA .line .dots { flex: 1; border-bottom: 2px dotted #cfc9b8; transform: translateY(-3px); min-width: 1.5rem; }
+  .mA .line .amt { font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .mA .line .pct { color: #c43c2b; font-size: 0.72rem; font-weight: 700; }
+  .mA .line.dim { color: #b5af9e; }
+  .mA .line.dim .amt { font-weight: 400; }
+  .mA .stamp {
+    position: absolute; right: -0.3rem; top: -0.75rem; width: 3.4rem; height: 3.4rem;
+    border: 2.5px solid #c43c2b; border-radius: 50%; color: #c43c2b;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.66rem; font-weight: 800; letter-spacing: 0.08em;
+    transform: rotate(-14deg); opacity: 0.85; background: rgba(251, 250, 245, 0.6);
+  }
+  .mA .total { border-top: 3px double #26241e; margin-top: 0.8rem; padding-top: 0.7rem; display: flex; justify-content: space-between; align-items: baseline; font-weight: 800; }
+  .mA .total .v { font-size: 1.05rem; font-variant-numeric: tabular-nums; }
+  .mA .total .v small { font-size: 0.68rem; color: #8d8779; font-weight: 400; }
+  .mA .btnrow { display: flex; gap: 0.6rem; margin-top: 1.1rem; }
+  .mA .abtn { flex: 1; text-align: center; border: 1.5px solid #26241e; padding: 0.55rem 0; font-size: 0.78rem; font-weight: 700; letter-spacing: 0.12em; }
+  .mA .abtn.primary { background: #26241e; color: #fbfaf5; }
+  .mA .lists .line .nm { font-weight: 400; }
+  .mA .barcode { margin: 1.2rem auto 0; width: 60%; height: 26px; background: repeating-linear-gradient(90deg, #26241e 0 2px, transparent 2px 4px, #26241e 4px 5px, transparent 5px 9px, #26241e 9px 12px, transparent 12px 14px); opacity: 0.75; }
+
+  /* ============================================================
+     方向 B · 货架价签 —— 每个商品是一张促销价签
+     ============================================================ */
+  .mB { background: #f0efec; color: #1a1a1a; font-family: 'SF Pro Display', 'PingFang SC', -apple-system, sans-serif; }
+  .mB .topbar { background: #1a1a1a; color: #fff; padding: 0.8rem 1.2rem; display: flex; align-items: baseline; justify-content: space-between; }
+  .mB .topbar .logo { font-weight: 900; font-size: 1rem; letter-spacing: -0.01em; }
+  .mB .topbar .logo em { font-style: normal; color: #ffd23f; }
+  .mB .topbar .nav { font-size: 0.7rem; font-weight: 700; letter-spacing: 0.1em; color: #bdbdbd; }
+  .mB .inner { padding: 1.3rem 1.2rem 1.5rem; }
+  .mB .h { font-size: 1.05rem; font-weight: 900; letter-spacing: -0.01em; }
+  .mB .sub { font-size: 0.78rem; color: #5b6b7a; margin-top: 0.2rem; }
+  .mB .tags { display: grid; grid-template-columns: 1fr 1fr; gap: 0.7rem; margin-top: 1rem; }
+  .mB .tag { background: #fff; border: 2px solid #1a1a1a; border-radius: 6px; overflow: hidden; position: relative; }
+  .mB .tag .cat { position: absolute; top: 0; left: 0; background: #1a1a1a; color: #fff; font-size: 0.58rem; font-weight: 800; letter-spacing: 0.1em; padding: 0.15rem 0.5rem; border-bottom-right-radius: 6px; }
+  .mB .tag .body { padding: 1.5rem 0.8rem 0.7rem; }
+  .mB .tag .in { font-size: 1.35rem; font-weight: 900; font-variant-numeric: tabular-nums; letter-spacing: -0.02em; }
+  .mB .tag .in small { font-size: 0.7rem; font-weight: 600; color: #5b6b7a; }
+  .mB .tag .spec { font-size: 0.72rem; color: #5b6b7a; font-weight: 600; margin-top: 0.1rem; }
+  .mB .tag .foot { padding: 0.55rem 0.8rem; border-top: 2px solid #1a1a1a; display: flex; align-items: baseline; justify-content: space-between; }
+  .mB .tag .foot .u { font-size: 0.95rem; font-weight: 900; font-variant-numeric: tabular-nums; }
+  .mB .tag .foot .lbl { font-size: 0.6rem; font-weight: 700; letter-spacing: 0.08em; color: #5b6b7a; }
+  .mB .tag.win .foot { background: #ffd23f; }
+  .mB .tag.win .foot .u { font-size: 1.25rem; }
+  .mB .tag.win .foot .lbl { color: #1a1a1a; }
+  .mB .tag .worse { color: #d7402b; font-weight: 800; font-size: 0.78rem; }
+  .mB .verdict { margin-top: 0.9rem; background: #ffd23f; border: 2px solid #1a1a1a; border-radius: 6px; padding: 0.6rem 0.9rem; font-weight: 800; font-size: 0.86rem; }
+  .mB .shelf { margin-top: 1.3rem; }
+  .mB .shelf .sh { font-size: 0.68rem; font-weight: 800; letter-spacing: 0.14em; color: #5b6b7a; margin-bottom: 0.5rem; }
+  .mB .chiprow { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+  .mB .chip { border: 2px solid #1a1a1a; background: #fff; border-radius: 999px; padding: 0.35rem 0.8rem; font-size: 0.75rem; font-weight: 800; }
+  .mB .chip small { font-weight: 600; color: #5b6b7a; }
+
+  /* ============================================================
+     方向 C · 精密账本 —— 数字是主角, 框几乎消失
+     ============================================================ */
+  .mC { background: #f6f4ee; color: #21252b; font-family: 'SF Pro Text', 'PingFang SC', -apple-system, sans-serif; padding: 1.3rem 1.35rem 1.5rem; }
+  .mC .num, .mC .lock { font-family: ui-monospace, 'SF Mono', 'Menlo', monospace; font-variant-numeric: tabular-nums; }
+  .mC .head { display: flex; justify-content: space-between; align-items: baseline; padding-bottom: 0.8rem; border-bottom: 1px solid #21252b; }
+  .mC .wordmark { font-weight: 800; font-size: 0.95rem; letter-spacing: -0.01em; }
+  .mC .wordmark .num { color: #0e7268; }
+  .mC .head .r { font-size: 0.68rem; font-weight: 700; letter-spacing: 0.12em; color: #6e6a5e; }
+  .mC .sect { margin-top: 1.15rem; }
+  .mC .sect-h { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 0.55rem; }
+  .mC .sect-h h4 { margin: 0; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.18em; color: #6e6a5e; }
+  .mC .group { border: 1px solid #dcd7ca; border-radius: 14px; overflow: hidden; background: #fdfcf9; }
+  .mC .grow { display: grid; grid-template-columns: 1.7rem 1fr auto; gap: 0.7rem; align-items: center; padding: 0.7rem 0.85rem; }
+  .mC .grow + .grow { border-top: 1px solid #e8e4d8; }
+  .mC .grow .idx { font-size: 0.78rem; font-weight: 800; color: #6e6a5e; }
+  .mC .grow .entry { min-width: 0; }
+  .mC .grow .entry .v { font-size: 1rem; font-weight: 600; }
+  .mC .grow .entry .lb { font-size: 0.62rem; letter-spacing: 0.06em; color: #a09a89; }
+  .mC .grow.best { background: rgba(14, 114, 104, 0.07); }
+  .mC .grow.best .idx { color: #0e7268; }
+  .mC .lock { white-space: nowrap; text-align: right; }
+  .mC .lock sup { font-size: 0.6em; font-weight: 600; margin-right: 0.06em; vertical-align: 0.55em; }
+  .mC .lock .big { font-size: 1.3rem; font-weight: 700; letter-spacing: -0.02em; }
+  .mC .lock .per { font-size: 0.64rem; color: #6e6a5e; margin-left: 0.15rem; }
+  .mC .lock.teal .big, .mC .lock.teal sup { color: #0e7268; }
+  .mC .grow .side { display: flex; flex-direction: column; align-items: flex-end; gap: 0.1rem; }
+  .mC .flag { font-size: 0.64rem; font-weight: 700; }
+  .mC .flag.best { color: #0e7268; }
+  .mC .flag.worse { color: #c24d3a; }
+  .mC .grow.faint { color: #b3ad9c; }
+  .mC .grow.faint .entry .v { font-weight: 400; }
+  .mC .band { margin-top: 0.7rem; background: rgba(14, 114, 104, 0.07); border-radius: 10px; padding: 0.55rem 0.85rem; font-size: 0.8rem; }
+  .mC .band b { color: #0e7268; }
+  .mC .ledger { margin-top: 0.2rem; }
+  .mC .lrow { display: flex; align-items: baseline; gap: 0.5rem; padding: 0.62rem 0.1rem; border-bottom: 1px solid #e8e4d8; font-size: 0.86rem; }
+  .mC .lrow .nm { font-weight: 600; white-space: nowrap; }
+  .mC .lrow .dots { flex: 1; border-bottom: 2px dotted #d5cfbf; transform: translateY(-3px); }
+  .mC .lrow .meta { color: #6e6a5e; font-size: 0.72rem; white-space: nowrap; }
+  .mC .actions { display: flex; justify-content: space-between; margin-top: 1.1rem; }
+  .mC .cbtn { border: 1px solid #dcd7ca; background: transparent; border-radius: 10px; padding: 0.5rem 1rem; font-size: 0.8rem; font-weight: 600; color: #21252b; font-family: inherit; }
+  .mC .cbtn.primary { background: #0e7268; border-color: #0e7268; color: #f6f4ee; }
+
+  .closing { margin-top: 3rem; max-width: 48rem; }
+  .closing h2 { font-size: 1.25rem; }
+  .closing p { color: var(--pg-muted); font-size: 0.92rem; }
+  .closing p strong { color: var(--pg-text); }
+
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">Price Pilot · 整体 UI 重设计</div>
+    <h1 class="page-title">三个方向：这个产品的脸应该长在哪</h1>
+    <p class="page-lede">现状（暖米色 + 圆角卡片 + 无性格数字）舒服但匿名。这个产品的主角是<strong>数字</strong>，它的世界里有小票、价签、账本——三个方向各取一个原型。mock 都是完整首页（头部 + 快速对比 + 清单），刻意保持各自的浅色世界观。</p>
+  </header>
+
+  <div class="dir-grid">
+
+    <!-- ============ A ============ -->
+    <section class="dir">
+      <div class="dir-head">
+        <span class="dir-kicker">方向 A</span>
+        <span class="dir-name">电子小票</span>
+      </div>
+      <p class="dir-pitch">整个应用是一张<strong>会计算的小票</strong>：等宽数字、点线引导、虚线撕票、红章盖出最划算。最有记忆点，分享图天然好看。</p>
+      <div class="swatches">
+        <div class="sw" style="background:#fbfaf5"><span style="color:#8d8779">FBFAF5</span></div>
+        <div class="sw" style="background:#26241e"><span style="color:#fbfaf5">26241E</span></div>
+        <div class="sw" style="background:#c43c2b"><span style="color:#fff">C43C2B</span></div>
+        <div class="sw" style="background:#8d8779"><span style="color:#fff">8D8779</span></div>
+      </div>
+
+      <div class="mock mA">
+        <div class="inner">
+          <p class="brand">PRICE PILOT</p>
+          <p class="brand-sub">比单价 · 选划算 · NO.20260707</p>
+          <hr class="rule" />
+          <p class="sec-label">快速对比</p>
+          <div class="line">
+            <span class="nm">A</span><span class="spec">19.9 / 500</span>
+            <span class="dots"></span>
+            <span class="amt">¥0.040<span class="pct"> +9%</span></span>
+          </div>
+          <div class="line">
+            <span class="nm">B</span><span class="spec">32.9 / 900</span>
+            <span class="dots"></span>
+            <span class="amt">¥0.037</span>
+            <span class="stamp">最划算</span>
+          </div>
+          <div class="line dim">
+            <span class="nm">C</span><span class="spec">— / —</span>
+            <span class="dots"></span>
+            <span class="amt">¥0.000</span>
+          </div>
+          <div class="total">
+            <span>商品 B 胜出</span>
+            <span class="v">省 9% <small>/ 单位</small></span>
+          </div>
+          <div class="btnrow">
+            <span class="abtn">重置</span>
+            <span class="abtn primary">存为清单</span>
+          </div>
+          <hr class="rule" />
+          <p class="sec-label">已存清单</p>
+          <div class="lists">
+            <div class="line"><span class="nm">超市采购</span><span class="spec">×6</span><span class="dots"></span><span class="spec">3 天前</span></div>
+            <div class="line"><span class="nm">海淘比价</span><span class="spec">×4</span><span class="dots"></span><span class="spec">上周</span></div>
+          </div>
+          <div class="barcode" aria-hidden="true"></div>
+        </div>
+        <div class="tear"></div>
+      </div>
+      <p class="dir-cost">落地成本：高。自托管等宽字体（拉丁/数字子集）、全组件改造、分享图重做，约一周的多 agent 工程。</p>
+    </section>
+
+    <!-- ============ B ============ -->
+    <section class="dir">
+      <div class="dir-head">
+        <span class="dir-kicker">方向 B</span>
+        <span class="dir-name">货架价签</span>
+      </div>
+      <p class="dir-pitch">每件商品是一张<strong>促销价签</strong>：粗黑描边、超重数字、赢家吃促销黄。最有能量，「省钱」的情绪价值拉满。</p>
+      <div class="swatches">
+        <div class="sw" style="background:#ffffff"><span style="color:#5b6b7a">FFFFFF</span></div>
+        <div class="sw" style="background:#1a1a1a"><span style="color:#fff">1A1A1A</span></div>
+        <div class="sw" style="background:#ffd23f"><span style="color:#1a1a1a">FFD23F</span></div>
+        <div class="sw" style="background:#d7402b"><span style="color:#fff">D7402B</span></div>
+      </div>
+
+      <div class="mock mB">
+        <div class="topbar">
+          <span class="logo">PRICE<em>PILOT</em></span>
+          <span class="nav">清单 · EN</span>
+        </div>
+        <div class="inner">
+          <p class="h">快速对比</p>
+          <p class="sub">输入价格和数量，立刻看到哪张价签更划算。</p>
+          <div class="tags">
+            <div class="tag">
+              <span class="cat">商品 A</span>
+              <div class="body">
+                <div class="in">¥19.9</div>
+                <div class="spec">规格 500</div>
+              </div>
+              <div class="foot">
+                <span class="lbl">单价</span>
+                <span class="u">¥0.040 <span class="worse">+9%</span></span>
+              </div>
+            </div>
+            <div class="tag win">
+              <span class="cat">商品 B</span>
+              <div class="body">
+                <div class="in">¥32.9</div>
+                <div class="spec">规格 900</div>
+              </div>
+              <div class="foot">
+                <span class="lbl">每单位</span>
+                <span class="u">¥0.037</span>
+              </div>
+            </div>
+          </div>
+          <div class="verdict">🏷️ 商品 B 更划算 — 最贵的一件单价高出 9%</div>
+          <div class="shelf">
+            <p class="sh">我的清单</p>
+            <div class="chiprow">
+              <span class="chip">超市采购 <small>×6</small></span>
+              <span class="chip">海淘比价 <small>×4</small></span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <p class="dir-cost">落地成本：高。自托管超重数字字体、卡片体系推翻重做；暗色模式下促销黄需要专门调校。</p>
+    </section>
+
+    <!-- ============ C ============ -->
+    <section class="dir">
+      <div class="dir-head">
+        <span class="dir-kicker">方向 C</span>
+        <span class="dir-name">精密账本</span>
+        <span class="pill-reco">★ 推荐</span>
+      </div>
+      <p class="dir-pitch">把你刚选的「一体分组」推广成全站语法：<strong>框只剩一层</strong>，行间发丝线，状态靠整行浅染。性格来自「价格 lockup」——货币符号上标、金额大号等宽、单位小注，数字第一次成为排印主角。</p>
+      <div class="swatches">
+        <div class="sw" style="background:#f6f4ee"><span style="color:#6e6a5e">F6F4EE</span></div>
+        <div class="sw" style="background:#21252b"><span style="color:#f6f4ee">21252B</span></div>
+        <div class="sw" style="background:#0e7268"><span style="color:#fff">0E7268</span></div>
+        <div class="sw" style="background:#c24d3a"><span style="color:#fff">C24D3A</span></div>
+        <div class="sw" style="background:#e8e4d8"><span style="color:#6e6a5e">E8E4D8</span></div>
+      </div>
+
+      <div class="mock mC">
+        <div class="head">
+          <span class="wordmark">Price<span class="num">Pilot</span></span>
+          <span class="r">清单 · EN</span>
+        </div>
+        <div class="sect">
+          <div class="sect-h"><h4>快速对比</h4></div>
+          <div class="group">
+            <div class="grow">
+              <span class="idx">A</span>
+              <span class="entry"><span class="lb">价格 / 数量</span><br /><span class="v num">19.9 / 500</span></span>
+              <span class="side">
+                <span class="lock"><sup>¥</sup><span class="big">0.040</span><span class="per">/单位</span></span>
+                <span class="flag worse">贵 9%</span>
+              </span>
+            </div>
+            <div class="grow best">
+              <span class="idx">B</span>
+              <span class="entry"><span class="lb">价格 / 数量</span><br /><span class="v num">32.9 / 900</span></span>
+              <span class="side">
+                <span class="lock teal"><sup>¥</sup><span class="big">0.037</span><span class="per">/单位</span></span>
+                <span class="flag best">最划算</span>
+              </span>
+            </div>
+            <div class="grow faint">
+              <span class="idx">C</span>
+              <span class="entry"><span class="lb">价格 / 数量</span><br /><span class="v num">0.00 / 0</span></span>
+              <span class="side"><span class="lock"><sup>¥</sup><span class="big">—</span></span></span>
+            </div>
+          </div>
+          <div class="band">商品 <b>B</b> 更划算，最贵的一件单价高出 <b class="num">9%</b>。</div>
+          <div class="actions">
+            <button class="cbtn" type="button">重置</button>
+            <button class="cbtn primary" type="button">存为清单</button>
+          </div>
+        </div>
+        <div class="sect">
+          <div class="sect-h"><h4>我的清单</h4></div>
+          <div class="ledger">
+            <div class="lrow"><span class="nm">超市采购</span><span class="dots"></span><span class="meta num">6 件 · 3 天前</span></div>
+            <div class="lrow"><span class="nm">海淘比价</span><span class="dots"></span><span class="meta num">4 件 · 上周</span></div>
+          </div>
+        </div>
+      </div>
+      <p class="dir-cost">落地成本：低。90% 是改 globals.css 的 token 与组件类 + 新增一个 PriceLockup 组件逐步替换，可以按页面渐进上线，暗色模式沿用现有变量体系。</p>
+    </section>
+  </div>
+
+  <div class="closing">
+    <h2>我的推荐：C 做底盘，A 留一味</h2>
+    <p><strong>推荐 C「精密账本」</strong>。理由：① 它是你在快速对比上刚做出的选择（少框、发丝线、染色）的自然延伸，全站会因此变成一套语法而不是两套；② 数字排印（价格 lockup + 等宽数字）恰好优待了这个产品的主角，性格立起来但不吵；③ 成本最低，token 层渐进落地，随时可停。</p>
+    <p>C 里已经借了 A 的一个元素——清单的<strong>点线引导</strong>（名称 → 数字的扫读线，是信息设计不是装饰）。如果你喜欢 A 的味道，小票美学可以留给<strong>分享图</strong>：对比结果导出成小票样式的图片，既有记忆点又不绑架日常界面。B 的促销黄如果舍不得，可以只用在「省 X%」这一个数字上。</p>
+    <p>选定后我会把它写成 plan.md 阶段四（token 定义 → 组件迁移顺序 → 双主题验收），照旧多 agent 开发 + 我把关。</p>
+  </div>
+</div>

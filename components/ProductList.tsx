@@ -1,10 +1,12 @@
 import { useEffect, useMemo, useState } from 'react';
-import { fetchExchangeRates } from '@/constants/currencies';
+import { fetchExchangeRates, getCurrencies } from '@/constants/currencies';
 import PriceComparisonBars from '@/components/PriceComparisonBars';
+import PriceLockup from '@/components/PriceLockup';
 import ProductEditorForm from '@/components/ProductEditorForm';
 import SavingsCalculator from '@/components/SavingsCalculator';
 import { useLanguage } from '@/context/LanguageContext';
 import { enrichProducts, getNumberLocale, getProductDisplayMeta, groupProductsByUnitType } from '@/lib/comparison-math';
+import { formatUnitPrice } from '@/lib/quick-compare';
 import { X, Trophy, TrendingDown, ShoppingCart, Pencil, Sparkles, AlertTriangle, RotateCw, WifiOff } from 'lucide-react';
 import type { EnrichedProduct, ExchangeRates, Product, ProductGroup, ProductInput, UnitSystem } from '@/types';
 
@@ -58,6 +60,10 @@ export default function ProductList({
   const [comparisonMode, setComparisonMode] = useState<'grouped' | 'combined'>('grouped');
   const { t, locale } = useLanguage();
   const numberLocale = getNumberLocale(locale);
+  const currencySymbol = useMemo(
+    () => getCurrencies(locale).find((currency) => currency.code === baseCurrency)?.symbol ?? baseCurrency,
+    [locale, baseCurrency]
+  );
   const hasProducts = products.length > 0;
 
   useEffect(() => {
@@ -152,11 +158,6 @@ export default function ProductList({
     return groupedProducts;
   }, [comparisonMode, hasMixedGroups, allSortedProducts, groupedProducts]);
 
-  const formatPrice = (price: number) => new Intl.NumberFormat(numberLocale, {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(price);
-
   const formatGroupCount = (count: number) => (
     locale === 'zh' ? `${count} 个商品` : `${count} item${count === 1 ? '' : 's'}`
   );
@@ -168,22 +169,29 @@ export default function ProductList({
 
   if (isLoading) {
     return (
-      <div className="space-y-3">
-        {[0, 1, 2].map((item) => (
-          <div key={item} className="panel space-y-4 p-4 sm:p-5">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-              <div className="skeleton-block h-10 w-10 rounded-full" />
+      <div className="space-y-4">
+        <div
+          className="overflow-hidden rounded-[var(--radius-md)] border bg-surface"
+          style={{ borderColor: 'var(--border)' }}
+        >
+          {[0, 1, 2].map((item) => (
+            <div
+              key={item}
+              className="flex items-center gap-3 p-3.5 sm:p-4"
+              style={{ borderTop: item > 0 ? '1px solid var(--border-subtle)' : undefined }}
+            >
+              <div className="skeleton-block h-9 w-9 rounded-full" />
               <div className="flex-1 space-y-2">
                 <div className="skeleton-block h-4 w-1/3" />
                 <div className="skeleton-block h-3 w-1/2" />
               </div>
-              <div className="w-full space-y-2 sm:w-20">
-                <div className="skeleton-block h-4 w-full" />
-                <div className="skeleton-block h-3 w-2/3" />
+              <div className="space-y-2">
+                <div className="skeleton-block h-5 w-16" />
+                <div className="skeleton-block ml-auto h-3 w-10" />
               </div>
             </div>
-          </div>
-        ))}
+          ))}
+        </div>
         <p className="text-center text-sm font-medium text-muted">{t('loadingRates')}</p>
       </div>
     );
@@ -294,87 +302,93 @@ export default function ProductList({
               </div>
             )}
 
-            {group.products.map((product, index) => {
-              const { quantityLabel } = getProductDisplayMeta(product, locale);
-              const isPending = pendingProductIds.includes(product.id);
-              const isEditing = editingProductId === product.id;
-              const actionsDisabled = (editingProductId !== null && !isEditing) || isPending;
+            <div
+              className="overflow-hidden rounded-[var(--radius-md)] border bg-surface"
+              style={{ borderColor: 'var(--border)' }}
+            >
+              {group.products.map((product, index) => {
+                const { quantityLabel } = getProductDisplayMeta(product, locale);
+                const isPending = pendingProductIds.includes(product.id);
+                const isEditing = editingProductId === product.id;
+                const actionsDisabled = (editingProductId !== null && !isEditing) || isPending;
+                const isBest = index === 0;
 
-              if (isEditing) {
-                return (
-                  <div key={product.id} className="panel space-y-4 p-4 sm:p-5 animate-fade-in">
-                    <div className="flex items-center justify-between gap-3">
-                      <div>
-                        <p className="text-sm font-semibold text-foreground">{t('editingItem')}</p>
-                        <p className="text-xs leading-5 text-muted">
-                          {t(`unitTypes.${product.unitType}`) || product.unitType}
-                        </p>
+                if (isEditing) {
+                  return (
+                    <div
+                      key={product.id}
+                      className="p-4 sm:p-5 animate-fade-in"
+                      style={{
+                        borderTop: index > 0 ? '1px solid var(--border-subtle)' : undefined,
+                        background: 'var(--surface-muted)',
+                      }}
+                    >
+                      <div className="mb-4 flex items-center justify-between gap-3">
+                        <div>
+                          <p className="text-sm font-semibold text-foreground">{t('editingItem')}</p>
+                          <p className="text-xs leading-5 text-muted">
+                            {t(`unitTypes.${product.unitType}`) || product.unitType}
+                          </p>
+                        </div>
+                        <span className="rank-chip">#{index + 1}</span>
                       </div>
-                      <span className="rank-chip">#{index + 1}</span>
+                      <ProductEditorForm
+                        initialProduct={product}
+                        unitSystem={unitSystem}
+                        defaultCurrency={product.currency}
+                        recentUnits={recentUnits}
+                        submitLabel={t('saveChanges')}
+                        onSubmit={(updatedProduct) => handleEditSubmit(product.id, updatedProduct)}
+                        onCancel={() => setEditingProductId(null)}
+                        autoFocus
+                        compact
+                      />
                     </div>
-                    <ProductEditorForm
-                      initialProduct={product}
-                      unitSystem={unitSystem}
-                      defaultCurrency={product.currency}
-                      recentUnits={recentUnits}
-                      submitLabel={t('saveChanges')}
-                      onSubmit={(updatedProduct) => handleEditSubmit(product.id, updatedProduct)}
-                      onCancel={() => setEditingProductId(null)}
-                      autoFocus
-                      compact
-                    />
-                  </div>
-                );
-              }
+                  );
+                }
 
-              return (
-                <article
-                  key={product.id}
-                  className={`panel relative overflow-hidden p-4 sm:p-5 ${isPending ? 'opacity-60' : ''}`}
-                >
-                  {index === 0 && (
-                    <div className="absolute inset-y-0 left-0 w-1 bg-brand" aria-hidden="true" />
-                  )}
-
-                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                    <div className="flex min-w-0 flex-1 items-start gap-3 sm:items-center">
-                      <span className={`rank-chip ${index === 0 ? 'rank-chip-best' : ''}`}>
-                        #{index + 1}
-                      </span>
+                return (
+                  <div
+                    key={product.id}
+                    className={`flex flex-col gap-2 p-3.5 sm:flex-row sm:items-center sm:gap-3 sm:p-4 animate-fade-in ${isPending ? 'opacity-60' : ''}`}
+                    style={{
+                      background: isBest ? 'var(--brand-soft)' : undefined,
+                      borderTop: index > 0 ? '1px solid var(--border-subtle)' : undefined,
+                    }}
+                  >
+                    <div className="flex min-w-0 flex-1 items-center gap-3">
+                      <span className={`rank-chip ${isBest ? 'rank-chip-best' : ''}`}>#{index + 1}</span>
 
                       <div className="min-w-0 flex-1">
                         <div className="flex flex-wrap items-center gap-2">
                           <span className="max-w-full break-words text-sm font-semibold text-foreground sm:text-base">{product.name}</span>
-                          <span className="pill-muted">
-                            {quantityLabel}
-                          </span>
-                          {index === 0 && (
+                          <span className="pill-muted">{quantityLabel}</span>
+                          {isBest && (
                             <span className="pill-brand">
                               <Trophy className="h-3 w-3" />
                               {t('bestDeal')}
                             </span>
                           )}
                         </div>
-                        <div className="mt-1 text-xs font-medium leading-5 text-muted">
+                        <div
+                          className="mt-1 text-xs font-medium leading-5 text-muted"
+                          style={{ fontFamily: 'var(--font-num)', fontVariantNumeric: 'tabular-nums' }}
+                        >
                           {product.price} {product.currency} / {product.quantity}{t(`units.${product.unit}`) || product.unit}
                         </div>
                       </div>
                     </div>
 
-                    <div
-                      className="flex w-full items-center justify-between gap-3 border-t pt-3 sm:ml-4 sm:w-auto sm:justify-end sm:border-t-0 sm:pt-0"
-                      style={{ borderColor: 'var(--border)' }}
-                    >
-                      <div className="mr-1 text-left sm:text-right">
-                        <div className="text-lg font-semibold text-foreground">
-                          {formatPrice(product.unitPrice)}
-                        </div>
-                        <div className="text-xs font-medium text-muted">
-                          /{t(`units.${product.baseUnit}`) || product.baseUnit}
-                        </div>
-                      </div>
+                    <div className="flex items-center justify-between gap-3 pl-12 sm:justify-end sm:pl-0">
+                      <PriceLockup
+                        amount={formatUnitPrice(product.unitPrice)}
+                        symbol={currencySymbol}
+                        per={t(`units.${product.baseUnit}`) || product.baseUnit}
+                        tone={isBest ? 'best' : 'default'}
+                        size="md"
+                      />
 
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-1.5">
                         <button
                           type="button"
                           onClick={() => setEditingProductId(product.id)}
@@ -396,16 +410,19 @@ export default function ProductList({
                       </div>
                     </div>
                   </div>
-                </article>
-              );
-            })}
+                );
+              })}
+            </div>
 
             {group.products.length >= 2 && priceDifferenceDisplay && (
               <div className="notice notice-danger items-center justify-center">
                 <p className="flex items-center justify-center gap-2 text-sm font-medium leading-6 text-foreground">
                   <TrendingDown className="h-4 w-4 text-danger" />
                   {t('priceDifference')}
-                  <span className="text-lg font-semibold text-danger">
+                  <span
+                    className="text-lg font-semibold text-danger"
+                    style={{ fontFamily: 'var(--font-num)', fontVariantNumeric: 'tabular-nums' }}
+                  >
                     {priceDifferenceDisplay}
                   </span>
                 </p>

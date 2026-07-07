@@ -36,21 +36,18 @@ describe('useShareImage', () => {
     vi.restoreAllMocks();
   });
 
-  it('builds an image preview from the captured result node', async () => {
+  it('renders an offscreen receipt node and builds an image preview', async () => {
     html2canvas.mockResolvedValue({
       toBlob: (callback: (blob: Blob | null) => void) => {
         callback(new Blob(['preview'], { type: 'image/png' }));
       },
     });
 
-    const resultNode = document.createElement('div');
-    const resultRef = { current: resultNode };
     const comparisonList = createComparisonList({ name: 'Groceries' });
     const listRef = { current: comparisonList };
     const { result } = renderHook(() => useShareImage({
       listRef,
-      resultRef,
-      resolvedTheme: 'light',
+      locale: 'en',
       t,
     }));
 
@@ -58,8 +55,11 @@ describe('useShareImage', () => {
       await result.current.shareImage();
     });
 
-    expect(html2canvas).toHaveBeenCalledWith(resultNode, expect.objectContaining({
-      backgroundColor: '#f6f3ee',
+    expect(html2canvas).toHaveBeenCalledTimes(1);
+    const [capturedNode, options] = html2canvas.mock.calls[0];
+    expect(capturedNode).toBeInstanceOf(HTMLElement);
+    expect(options).toEqual(expect.objectContaining({
+      backgroundColor: null,
       scale: 2,
     }));
     expect(result.current.imagePreview).toEqual({
@@ -67,5 +67,8 @@ describe('useShareImage', () => {
       url: 'blob:preview',
     });
     expect(toast.success).toHaveBeenCalledWith('shareImageSuccess');
+
+    // 离屏容器截图后应被清理, 不残留在文档中。
+    expect(document.body.querySelectorAll('div[style*="-9999px"]').length).toBe(0);
   });
 });

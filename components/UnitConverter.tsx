@@ -61,7 +61,7 @@ export default function UnitConverter({ unitSystem }: UnitConverterProps) {
   };
 
   return (
-    <div className="panel p-5">
+    <div>
       <div className="mb-5 space-y-1">
         <h2 className="section-title">{t('unitConverter')}</h2>
         <p className="section-description">{t('convert')}</p>

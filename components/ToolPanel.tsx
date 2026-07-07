@@ -43,13 +43,19 @@ export default function ToolPanel({
       </div>
 
       {activePanel === 'unit-manager' && (
-        <div className="animate-fade-in">
+        <div
+          className="animate-fade-in border-t pt-4"
+          style={{ borderColor: 'var(--border-subtle)' }}
+        >
           <UnitManager unitSystem={unitSystem} onUpdateUnits={onUpdateUnits} />
         </div>
       )}
 
       {activePanel === 'converter' && (
-        <div className="animate-fade-in">
+        <div
+          className="animate-fade-in border-t pt-4"
+          style={{ borderColor: 'var(--border-subtle)' }}
+        >
           <UnitConverter unitSystem={unitSystem} />
         </div>
       )}

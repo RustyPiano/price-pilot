@@ -1,11 +1,9 @@
-import type { RefObject } from 'react';
 import ProductList from '@/components/ProductList';
 import { useLanguage } from '@/context/LanguageContext';
 import { BarChart3, Copy, Download, Trash2 } from 'lucide-react';
 import type { ProductInput, UnitSystem } from '@/types';
 
 interface WorkspaceResultsSectionProps {
-  resultRef: RefObject<HTMLDivElement | null>;
   productsCount: number;
   products: Parameters<typeof ProductList>[0]['products'];
   baseCurrency: string;
@@ -23,7 +21,6 @@ interface WorkspaceResultsSectionProps {
 }
 
 export default function WorkspaceResultsSection({
-  resultRef,
   productsCount,
   products,
   baseCurrency,
@@ -75,7 +72,7 @@ export default function WorkspaceResultsSection({
         )}
       </div>
 
-      <div ref={resultRef} className="space-y-4">
+      <div className="space-y-4">
         <ProductList
           products={products}
           baseCurrency={baseCurrency}

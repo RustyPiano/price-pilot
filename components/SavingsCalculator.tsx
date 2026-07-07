@@ -91,22 +91,40 @@ export default function SavingsCalculator({
       </div>
 
       {calculation && (
-        <div className="space-y-3">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div className="subpanel p-3">
+        <div className="space-y-4">
+          <div
+            className="grid grid-cols-1 gap-3 border-t pt-4 sm:grid-cols-2 sm:gap-0"
+            style={{ borderColor: 'var(--border-subtle)' }}
+          >
+            <div className="sm:pr-5">
               <p className="text-xs font-medium text-muted">{t('monthlySavingsLabel')}</p>
-              <p className="mt-1 text-lg font-semibold text-foreground">{formatCurrencyAmount(calculation.monthlySavings, baseCurrency, locale)}</p>
+              <p
+                className="mt-1 text-xl font-semibold text-foreground"
+                style={{ fontFamily: 'var(--font-num)', fontVariantNumeric: 'tabular-nums' }}
+              >
+                {formatCurrencyAmount(calculation.monthlySavings, baseCurrency, locale)}
+              </p>
             </div>
-            <div className="subpanel p-3">
+            <div
+              className="border-t pt-3 sm:border-l sm:border-t-0 sm:pl-5 sm:pt-0"
+              style={{ borderColor: 'var(--border-subtle)' }}
+            >
               <p className="text-xs font-medium text-muted">{t('annualSavingsLabel')}</p>
-              <p className="mt-1 text-lg font-semibold text-foreground">{formatCurrencyAmount(calculation.annualSavings, baseCurrency, locale)}</p>
+              <p
+                className="mt-1 text-xl font-semibold text-foreground"
+                style={{ fontFamily: 'var(--font-num)', fontVariantNumeric: 'tabular-nums' }}
+              >
+                {formatCurrencyAmount(calculation.annualSavings, baseCurrency, locale)}
+              </p>
             </div>
           </div>
 
           <div className="space-y-2">
             <div className="flex items-center justify-between text-sm font-medium text-foreground">
               <span>{t('savingsRateLabel')}</span>
-              <span>{calculation.savingsPercent.toFixed(0)}%</span>
+              <span style={{ fontFamily: 'var(--font-num)', fontVariantNumeric: 'tabular-nums' }}>
+                {calculation.savingsPercent.toFixed(0)}%
+              </span>
             </div>
             <div className="result-bar-track">
               <div

@@ -6,7 +6,7 @@ import { useRouter } from 'next/router';
 import { toast } from 'react-hot-toast';
 import LanguageToggle from '@/components/LanguageToggle';
 import PageHeader from '@/components/PageHeader';
-import { fetchExchangeRates } from '@/constants/currencies';
+import QuickCompare from '@/components/QuickCompare';
 import { useLanguage } from '@/context/LanguageContext';
 import { downloadAsJson, exportAllData, importFromJson } from '@/lib/data-backup';
 import {
@@ -16,7 +16,7 @@ import {
   removeComparisonList,
   saveComparisonList,
 } from '@/lib/comparison-lists';
-import { enrichProducts, formatCurrencyAmount, getNumberLocale, getProductDisplayMeta, groupProductsByUnitType } from '@/lib/comparison-math';
+import { getNumberLocale } from '@/lib/comparison-math';
 import {
   buildAbsoluteUrl,
   DEFAULT_SITE_ORIGIN,
@@ -27,20 +27,12 @@ import {
   SITE_NAME,
 } from '@/lib/seo';
 import { Archive, ArrowRight, Download, FolderOpen, Layers3, Plus, Trash2, Upload, X } from 'lucide-react';
-import type { ComparisonList, EnrichedProduct, ExchangeRates, ImportStrategy, Locale } from '@/types';
+import type { ComparisonList, ImportStrategy, Locale } from '@/types';
 
 interface NewListDraft {
   name: string;
   category: string;
 }
-
-interface ListSummaryItem {
-  unitType: string;
-  baseUnit: string | null;
-  bestProduct: EnrichedProduct;
-}
-
-type SummaryMap = Record<string, ListSummaryItem[]>;
 
 export const getStaticProps: GetStaticProps<{ initialLocale: Locale }> = async () => ({
   props: {
@@ -52,7 +44,6 @@ export function HomePage() {
   const router = useRouter();
   const [lists, setLists] = useState<ComparisonList[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [summaryMap, setSummaryMap] = useState<SummaryMap>({});
   const [newList, setNewList] = useState<NewListDraft>({ name: '', category: '' });
   const [pendingImportFile, setPendingImportFile] = useState<File | null>(null);
   const [isImporting, setIsImporting] = useState(false);
@@ -148,66 +139,6 @@ export function HomePage() {
       isMounted = false;
     };
   }, [locale, t]);
-
-  useEffect(() => {
-    let isMounted = true;
-
-    const buildSummaries = async () => {
-      const listsWithProducts = lists.filter((list) => list.products.length > 0);
-      if (listsWithProducts.length === 0) {
-        if (isMounted) {
-          setSummaryMap({});
-        }
-        return;
-      }
-
-      const rateEntries = await Promise.all(
-        [...new Set(listsWithProducts.map((list) => list.baseCurrency))].map(async (currency): Promise<[string, ExchangeRates | null]> => {
-          try {
-            return [currency, await fetchExchangeRates(currency)];
-          } catch (error) {
-            console.error(`Failed to fetch summary rates for ${currency}:`, error);
-            return [currency, null];
-          }
-        })
-      );
-
-      const ratesByCurrency = Object.fromEntries(rateEntries) as Record<string, ExchangeRates | null>;
-      const nextSummaryMap: SummaryMap = {};
-
-      for (const list of listsWithProducts) {
-        const exchangeRates = ratesByCurrency[list.baseCurrency];
-        if (!exchangeRates) continue;
-
-        const groupedProducts = groupProductsByUnitType(
-          enrichProducts(list.products, exchangeRates, list.baseCurrency, list.unitSystem)
-        );
-
-        nextSummaryMap[list.id] = groupedProducts
-          .slice(0, 2)
-          .flatMap((group) => {
-            const bestProduct = group.products[0];
-            return bestProduct
-              ? [{
-                  unitType: group.unitType,
-                  baseUnit: group.baseUnit,
-                  bestProduct,
-                }]
-              : [];
-          });
-      }
-
-      if (isMounted) {
-        setSummaryMap(nextSummaryMap);
-      }
-    };
-
-    buildSummaries();
-
-    return () => {
-      isMounted = false;
-    };
-  }, [lists]);
 
   const activeLists = useMemo(() => lists.filter((list) => !list.archived), [lists]);
   const archivedLists = useMemo(() => lists.filter((list) => list.archived), [lists]);
@@ -316,84 +247,56 @@ export function HomePage() {
     }
   };
 
-  const formatDate = (value: string) => new Intl.DateTimeFormat(numberLocale, {
+  const formatUpdatedDate = (value: string) => new Intl.DateTimeFormat(numberLocale, {
     dateStyle: 'medium',
-    timeStyle: 'short',
   }).format(new Date(value));
 
-  const renderListCard = (list: ComparisonList) => {
-    const summaries = summaryMap[list.id] || [];
+  const renderLedgerRow = (list: ComparisonList) => {
+    const itemsText = t('listRowItems').replace('{count}', String(list.products.length));
+    const meta = `${itemsText} · ${formatUpdatedDate(list.updatedAt)}`;
 
     return (
-      <article key={list.id} className="panel flex flex-col gap-4 p-4 sm:p-5">
-        <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0 space-y-1">
-            <h2 className="truncate text-base font-semibold text-foreground sm:text-lg">{list.name}</h2>
-            <p className="text-sm text-muted">
-              {list.category || t('uncategorizedList')}
-            </p>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => handleToggleArchive(list)}
-              aria-label={list.archived ? t('unarchiveList') : t('archiveList')}
-              className="icon-btn"
-            >
-              <Archive className="h-4 w-4" />
-            </button>
-            <button
-              type="button"
-              onClick={() => handleDeleteList(list.id)}
-              aria-label={t('deleteList')}
-              className="icon-btn icon-btn-danger"
-            >
-              <Trash2 className="h-4 w-4" />
-            </button>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-2 gap-3 text-sm">
-          <div className="subpanel p-3">
-            <p className="text-xs font-medium text-muted">{t('listItemsCount')}</p>
-            <p className="mt-1 text-lg font-semibold text-foreground">{list.products.length}</p>
-          </div>
-          <div className="subpanel p-3">
-            <p className="text-xs font-medium text-muted">{t('listBaseCurrency')}</p>
-            <p className="mt-1 text-lg font-semibold text-foreground">{list.baseCurrency}</p>
-          </div>
-        </div>
-
-        <div className="space-y-2">
-          <p className="text-xs font-medium text-muted">{t('listBestSummary')}</p>
-          {summaries.length > 0 ? (
-            summaries.map((summary) => (
-              <div key={`${list.id}-${summary.unitType}`} className="subpanel p-3">
-                <p className="text-sm font-semibold text-foreground">{getProductDisplayMeta(summary.bestProduct, locale).displayName}</p>
-                <p className="mt-1 text-xs leading-5 text-muted">
-                  {(t(`unitTypes.${summary.unitType}`) || summary.unitType)} · {formatCurrencyAmount(summary.bestProduct.unitPrice, list.baseCurrency, locale)}/{t(`units.${summary.baseUnit}`) || summary.baseUnit}
-                </p>
-              </div>
-            ))
-          ) : (
-            <p className="text-sm text-muted">{t('listBestSummaryEmpty')}</p>
-          )}
-        </div>
-
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <span className="text-xs leading-5 text-muted">
-            {t('listUpdatedAt').replace('{date}', formatDate(list.updatedAt))}
-          </span>
-          <Link
-            href={`/list/${list.id}`}
-            className="btn btn-primary w-full shrink-0 whitespace-nowrap px-4 text-sm sm:w-auto"
+      <div
+        key={list.id}
+        className="group flex items-center transition-colors hover:bg-[color:var(--brand-soft)]"
+        style={{ borderBottom: '1px solid var(--border-subtle)' }}
+      >
+        <Link
+          href={`/list/${list.id}`}
+          className="flex min-w-0 flex-1 items-baseline gap-3 rounded-lg py-3 pl-1 pr-1"
+        >
+          <span className="min-w-0 truncate font-semibold text-foreground">{list.name}</span>
+          <span className="dotted-leader" aria-hidden="true" />
+          <span
+            className="shrink-0 whitespace-nowrap text-xs text-muted"
+            style={{ fontFamily: 'var(--font-num)', fontVariantNumeric: 'tabular-nums' }}
           >
-            {t('openList')}
-            <ArrowRight className="h-4 w-4" />
-          </Link>
+            {meta}
+          </span>
+          <ArrowRight
+            className="h-4 w-4 shrink-0 self-center text-muted transition-transform group-hover:translate-x-0.5"
+            aria-hidden="true"
+          />
+        </Link>
+        <div className="flex shrink-0 items-center gap-0.5 pl-1">
+          <button
+            type="button"
+            onClick={() => handleToggleArchive(list)}
+            aria-label={list.archived ? t('unarchiveList') : t('archiveList')}
+            className="inline-flex h-11 w-11 items-center justify-center rounded-xl text-muted transition-colors hover:bg-[color:var(--surface)] hover:text-foreground"
+          >
+            <Archive className="h-4 w-4" />
+          </button>
+          <button
+            type="button"
+            onClick={() => handleDeleteList(list.id)}
+            aria-label={t('deleteList')}
+            className="inline-flex h-11 w-11 items-center justify-center rounded-xl text-muted transition-colors hover:bg-[color:var(--danger-soft)] hover:text-[color:var(--danger)]"
+          >
+            <Trash2 className="h-4 w-4" />
+          </button>
         </div>
-      </article>
+      </div>
     );
   };
 
@@ -438,6 +341,8 @@ export function HomePage() {
         </PageHeader>
 
         <main className="mx-auto max-w-5xl space-y-5 px-4 py-5 sm:space-y-6 sm:py-6">
+          <QuickCompare />
+
           <section className="grid gap-4 lg:grid-cols-[1.25fr_0.95fr]">
             <div className="panel space-y-5 p-5 sm:p-6">
               <div className="space-y-2">
@@ -448,21 +353,30 @@ export function HomePage() {
                 <p className="section-description max-w-2xl">{t('comparisonListsHeroBody')}</p>
               </div>
 
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-                <div className="subpanel p-4">
-                  <p className="text-xs font-medium text-muted">{t('activeListsLabel')}</p>
-                  <p className="mt-2 text-2xl font-semibold text-foreground">{activeLists.length}</p>
-                </div>
-                <div className="subpanel p-4">
-                  <p className="text-xs font-medium text-muted">{t('archivedListsLabel')}</p>
-                  <p className="mt-2 text-2xl font-semibold text-foreground">{archivedLists.length}</p>
-                </div>
-                <div className="subpanel p-4">
-                  <p className="text-xs font-medium text-muted">{t('productsLabel')}</p>
-                  <p className="mt-2 text-2xl font-semibold text-foreground">
-                    {lists.reduce((sum, list) => sum + list.products.length, 0)}
-                  </p>
-                </div>
+              <div className="grid grid-cols-3">
+                {[
+                  { label: t('activeListsLabel'), value: activeLists.length },
+                  { label: t('archivedListsLabel'), value: archivedLists.length },
+                  { label: t('productsLabel'), value: lists.reduce((sum, list) => sum + list.products.length, 0) },
+                ].map((stat, index) => (
+                  <div
+                    key={stat.label}
+                    className="flex flex-col gap-1.5"
+                    style={{
+                      paddingLeft: index === 0 ? undefined : '1.25rem',
+                      paddingRight: '1.25rem',
+                      borderLeft: index === 0 ? undefined : '1px solid var(--border-subtle)',
+                    }}
+                  >
+                    <span
+                      className="text-3xl font-bold leading-none text-foreground"
+                      style={{ fontFamily: 'var(--font-num)', fontVariantNumeric: 'tabular-nums', letterSpacing: '-0.02em' }}
+                    >
+                      {stat.value}
+                    </span>
+                    <span className="text-xs font-medium tracking-wide text-muted">{stat.label}</span>
+                  </div>
+                ))}
               </div>
 
               <div className="flex flex-col gap-2 sm:flex-row">
@@ -534,28 +448,25 @@ export function HomePage() {
           </section>
 
           {isLoading ? (
-            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-              {[0, 1, 2].map((item) => (
-                <div key={item} className="panel space-y-4 p-5">
-                  <div className="skeleton-block h-5 w-1/2" />
-                  <div className="skeleton-block h-4 w-1/3" />
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="subpanel space-y-3 p-4">
-                      <div className="skeleton-block h-3 w-2/5" />
-                      <div className="skeleton-block h-6 w-1/3" />
-                    </div>
-                    <div className="subpanel space-y-3 p-4">
-                      <div className="skeleton-block h-3 w-2/5" />
-                      <div className="skeleton-block h-6 w-1/3" />
-                    </div>
+            <section className="space-y-3">
+              <div className="flex items-center gap-2 px-1">
+                <Layers3 className="h-5 w-5 text-brand" />
+                <div className="skeleton-block h-5 w-28" />
+              </div>
+              <div className="px-1">
+                {[0, 1, 2].map((item) => (
+                  <div
+                    key={item}
+                    className="flex items-center gap-3 py-3.5"
+                    style={{ borderBottom: '1px solid var(--border-subtle)' }}
+                  >
+                    <div className="skeleton-block h-4 w-28" />
+                    <div className="flex-1" />
+                    <div className="skeleton-block h-3 w-24" />
                   </div>
-                  <div className="subpanel space-y-3 p-4">
-                    <div className="skeleton-block h-3 w-1/2" />
-                    <div className="skeleton-block h-4 w-2/3" />
-                  </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            </section>
           ) : activeLists.length === 0 && archivedLists.length === 0 ? (
             <div className="panel space-y-4 p-6 text-center sm:p-8">
               <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-surface-100 text-brand">
@@ -568,24 +479,26 @@ export function HomePage() {
             </div>
           ) : (
             <>
-              <section className="space-y-4">
-                <div className="flex items-center gap-2 px-1">
-                  <Layers3 className="h-5 w-5 text-brand" />
-                  <h2 className="section-title">{t('activeListsTitle')}</h2>
-                </div>
-                <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-                  {activeLists.map(renderListCard)}
-                </div>
-              </section>
+              {activeLists.length > 0 && (
+                <section className="space-y-3">
+                  <div className="flex items-center gap-2 px-1">
+                    <Layers3 className="h-5 w-5 text-brand" />
+                    <h2 className="section-title">{t('activeListsTitle')}</h2>
+                  </div>
+                  <div className="px-1">
+                    {activeLists.map(renderLedgerRow)}
+                  </div>
+                </section>
+              )}
 
               {archivedLists.length > 0 && (
-                <section className="space-y-4">
+                <section className="space-y-3">
                   <div className="flex items-center gap-2 px-1">
                     <Archive className="h-5 w-5 text-muted" />
                     <h2 className="section-title">{t('archivedListsTitle')}</h2>
                   </div>
-                  <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-                    {archivedLists.map(renderListCard)}
+                  <div className="px-1">
+                    {archivedLists.map(renderLedgerRow)}
                   </div>
                 </section>
               )}
@@ -619,9 +532,13 @@ export function HomePage() {
           <section className="grid gap-4 lg:grid-cols-2">
             <section className="panel space-y-4 p-5 sm:p-6">
               <h2 className="section-title">{guideContent.useCasesTitle}</h2>
-              <ul className="space-y-3 text-sm leading-6 text-muted">
+              <ul className="text-sm leading-6 text-muted">
                 {guideContent.useCases.map((item) => (
-                  <li key={item} className="subpanel p-3">
+                  <li
+                    key={item}
+                    className="border-b py-2.5 first:pt-0 last:border-b-0 last:pb-0"
+                    style={{ borderColor: 'var(--border-subtle)' }}
+                  >
                     {item}
                   </li>
                 ))}
@@ -630,9 +547,13 @@ export function HomePage() {
 
             <section className="panel space-y-4 p-5 sm:p-6">
               <h2 className="section-title">{guideContent.faqTitle}</h2>
-              <div className="space-y-3">
+              <div>
                 {guideContent.faqs.map((item) => (
-                  <article key={item.question} className="subpanel space-y-2 p-4">
+                  <article
+                    key={item.question}
+                    className="space-y-1.5 border-b py-3.5 first:pt-0 last:border-b-0 last:pb-0"
+                    style={{ borderColor: 'var(--border-subtle)' }}
+                  >
                     <h3 className="text-sm font-semibold text-foreground">{item.question}</h3>
                     <p className="text-sm leading-6 text-muted">{item.answer}</p>
                   </article>

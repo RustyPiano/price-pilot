@@ -6,6 +6,21 @@
   "display": "standalone",
   "background_color": "#f6f3ee",
   "theme_color": "#f6f3ee",
+  "shortcuts": [
+    {
+      "name": "Quick Compare",
+      "short_name": "Quick Compare",
+      "description": "Compare unit prices instantly, no list required.",
+      "url": "/",
+      "icons": [
+        {
+          "src": "/icon.svg",
+          "sizes": "any",
+          "type": "image/svg+xml"
+        }
+      ]
+    }
+  ],
   "icons": [
     {
       "src": "/icon.svg",

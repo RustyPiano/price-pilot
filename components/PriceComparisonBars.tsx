@@ -1,4 +1,5 @@
-import { formatCurrencyAmount, getProductDisplayMeta } from '@/lib/comparison-math';
+import { getNumberLocale, getProductDisplayMeta } from '@/lib/comparison-math';
+import { formatUnitPrice } from '@/lib/quick-compare';
 import type { Locale, ProductGroup, Translate } from '@/types';
 
 interface PriceComparisonBarsProps {
@@ -19,9 +20,13 @@ export default function PriceComparisonBars({
   }
 
   const highestPrice = Math.max(...group.products.map((product) => product.unitPrice));
+  const currencySymbol =
+    new Intl.NumberFormat(getNumberLocale(locale), { style: 'currency', currency: baseCurrency })
+      .formatToParts(1)
+      .find((part) => part.type === 'currency')?.value ?? baseCurrency;
 
   return (
-    <div className="panel space-y-3 p-4 sm:p-5">
+    <div className="space-y-3 px-1">
       <div>
         <h4 className="text-sm font-semibold text-foreground sm:text-base">{t('comparisonChartTitle')}</h4>
         <p className="text-xs leading-5 text-muted">{t('comparisonChartBody')}</p>
@@ -46,8 +51,11 @@ export default function PriceComparisonBars({
                     {quantityLabel}
                   </span>
                 </div>
-                <span className="text-xs leading-5 text-muted sm:whitespace-nowrap">
-                  {formatCurrencyAmount(product.unitPrice, baseCurrency, locale)}/{t(`units.${product.baseUnit}`) || product.baseUnit}
+                <span
+                  className="text-xs leading-5 text-muted sm:whitespace-nowrap"
+                  style={{ fontFamily: 'var(--font-num)', fontVariantNumeric: 'tabular-nums' }}
+                >
+                  {currencySymbol}{formatUnitPrice(product.unitPrice)}/{t(`units.${product.baseUnit}`) || product.baseUnit}
                 </span>
               </div>
               <div className="result-bar-track">

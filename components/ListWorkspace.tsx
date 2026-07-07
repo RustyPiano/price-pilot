@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { toast } from 'react-hot-toast';
 import ListComposerPanel from '@/components/ListComposerPanel';
 import ListMetadataEditor from '@/components/ListMetadataEditor';
@@ -7,7 +7,6 @@ import ShareLinkModal from '@/components/ShareLinkModal';
 import WorkspaceResultsSection from '@/components/WorkspaceResultsSection';
 import { type ActivePanel } from '@/components/ToolPanel';
 import { useLanguage } from '@/context/LanguageContext';
-import { useTheme } from '@/context/ThemeContext';
 import { useListState } from '@/hooks/useListState';
 import { useShareImage } from '@/hooks/useShareImage';
 import { useShareLink } from '@/hooks/useShareLink';
@@ -23,9 +22,7 @@ interface ListWorkspaceProps {
 export default function ListWorkspace({ comparisonList, onSaveList }: ListWorkspaceProps) {
   const [activePanel, setActivePanel] = useState<ActivePanel>(null);
   const [highlightForm, setHighlightForm] = useState(false);
-  const resultsCaptureRef = useRef<HTMLDivElement | null>(null);
-  const { t } = useLanguage();
-  const { resolvedTheme } = useTheme();
+  const { t, locale } = useLanguage();
   const {
     list,
     listRef,
@@ -51,8 +48,7 @@ export default function ListWorkspace({ comparisonList, onSaveList }: ListWorksp
     handleDownloadPreviewImage,
   } = useShareImage({
     listRef,
-    resultRef: resultsCaptureRef,
-    resolvedTheme,
+    locale,
     t,
   });
   const { products, baseCurrency, unitSystem, recentUnits, updatedAt, name, category } = list;
@@ -116,7 +112,6 @@ export default function ListWorkspace({ comparisonList, onSaveList }: ListWorksp
         />
 
         <WorkspaceResultsSection
-          resultRef={resultsCaptureRef}
           productsCount={products.length}
           products={products}
           baseCurrency={baseCurrency}

@@ -83,7 +83,7 @@ export default function UnitManager({ unitSystem, onUpdateUnits }: UnitManagerPr
   };
 
   return (
-    <div className="panel p-5">
+    <div>
       <div className="mb-5 flex items-center justify-between gap-3">
         <div className="space-y-1">
           <h2 className="section-title">{t('unitManager')}</h2>
@@ -111,12 +111,23 @@ export default function UnitManager({ unitSystem, onUpdateUnits }: UnitManagerPr
         ))}
       </div>
 
-      <div className="mb-5 space-y-2">
-        {(Object.entries(selectedCategory?.conversions ?? {}) as Array<[string, { rate: number; displayName: string }]>).map(([code, unit]) => (
-          <div key={code} className="subpanel flex items-center justify-between p-3">
+      <div className="mb-5">
+        {(Object.entries(selectedCategory?.conversions ?? {}) as Array<[string, { rate: number; displayName: string }]>).map(([code, unit], index) => (
+          <div
+            key={code}
+            className="flex items-center justify-between gap-2 py-2.5"
+            style={{ borderTop: index > 0 ? '1px solid var(--border-subtle)' : undefined }}
+          >
             <div className="min-w-0 flex flex-wrap items-center gap-2">
               <span className="font-semibold text-foreground">{t(`units.${code}`) || unit.displayName}</span>
-              <span className="rounded-full bg-surface px-2.5 py-1 text-xs font-medium text-muted">
+              <span
+                className="rounded-full border px-2.5 py-1 text-xs font-medium text-muted"
+                style={{
+                  borderColor: 'var(--border-subtle)',
+                  fontFamily: 'var(--font-num)',
+                  fontVariantNumeric: 'tabular-nums',
+                }}
+              >
                 {code} = {unit.rate} {selectedCategory?.baseUnit ?? ''}
               </span>
             </div>
@@ -144,7 +155,11 @@ export default function UnitManager({ unitSystem, onUpdateUnits }: UnitManagerPr
           {t('addNewUnit')}
         </button>
       ) : (
-        <form onSubmit={handleAddUnit} className="subpanel space-y-3 p-4">
+        <form
+          onSubmit={handleAddUnit}
+          className="space-y-3 border-t pt-4"
+          style={{ borderColor: 'var(--border-subtle)' }}
+        >
           <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
             <label htmlFor="new-unit-code" className="sr-only">{locale === 'zh' ? '单位代号' : 'Unit code'}</label>
             <input

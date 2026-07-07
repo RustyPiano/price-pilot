@@ -3,33 +3,33 @@
 @tailwind utilities;
 
 :root {
-  --canvas: #f6f3ee;
-  --surface: #ffffff;
+  --canvas: #f6f4ee;
+  --surface: #fdfcf9;
   --surface-muted: #f1ede6;
-  --text-primary: #1f2937;
-  --text-secondary: #5b6472;
-  --border: #d7d2c8;
-  --border-subtle: rgba(215, 210, 200, 0.9);
-  --brand: #0f766e;
-  --brand-strong: #115e59;
+  --text-primary: #21252b;
+  --text-secondary: #6e6a5e;
+  --border: #dcd7ca;
+  --border-subtle: #e8e4d8;
+  --brand: #0e7268;
+  --brand-strong: #0b5b53;
   --success: #059669;
   --warning: #b45309;
-  --danger: #dc2626;
-  --focus-ring: rgba(15, 118, 110, 0.22);
-  --shadow-sm: 0 12px 24px -22px rgba(15, 23, 42, 0.28);
-  --shadow-base: 0 18px 40px -28px rgba(15, 23, 42, 0.3);
-  --shadow-lg: 0 24px 52px -34px rgba(15, 23, 42, 0.35);
-  --header-border: rgba(215, 210, 200, 0.94);
-  --header-bg: rgba(255, 255, 255, 0.82);
-  --brand-soft: rgba(15, 118, 110, 0.08);
-  --brand-soft-border: rgba(15, 118, 110, 0.14);
-  --danger-soft: rgba(220, 38, 38, 0.08);
-  --danger-soft-border: rgba(220, 38, 38, 0.16);
+  --danger: #c24d3a;
+  --focus-ring: rgba(14, 114, 104, 0.22);
+  --shadow-sm: 0 10px 22px -22px rgba(33, 37, 43, 0.18);
+  --shadow-base: 0 14px 34px -28px rgba(33, 37, 43, 0.2);
+  --shadow-lg: 0 20px 46px -34px rgba(33, 37, 43, 0.24);
+  --header-border: rgba(220, 215, 202, 0.94);
+  --header-bg: rgba(253, 252, 249, 0.82);
+  --brand-soft: rgba(14, 114, 104, 0.08);
+  --brand-soft-border: rgba(14, 114, 104, 0.14);
+  --danger-soft: rgba(194, 77, 58, 0.08);
+  --danger-soft-border: rgba(194, 77, 58, 0.16);
   --warning-soft: #fff7ed;
   --warning-soft-border: rgba(180, 83, 9, 0.16);
   --success-soft: #ecfdf5;
   --success-soft-border: rgba(5, 150, 105, 0.16);
-  --info-soft: rgba(248, 250, 252, 0.94);
+  --info-soft: rgba(253, 252, 249, 0.94);
   --track-bg: rgba(203, 213, 225, 0.45);
   --skeleton-start: rgba(203, 213, 225, 0.55);
   --skeleton-mid: rgba(229, 231, 235, 0.78);
@@ -40,37 +40,38 @@
   --radius-lg: 22px;
   --font-body: 'SF Pro Text', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
   --font-heading: 'SF Pro Display', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-num: 'SF Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   color-scheme: light;
 }
 
 :root[data-theme='dark'] {
-  --canvas: #0f1117;
-  --surface: #171b24;
-  --surface-muted: #212633;
-  --text-primary: #edf2f7;
-  --text-secondary: #a8b0bd;
-  --border: #313846;
-  --border-subtle: rgba(49, 56, 70, 0.92);
+  --canvas: #151310;
+  --surface: #1e1c18;
+  --surface-muted: #28251f;
+  --text-primary: #f3f0e9;
+  --text-secondary: #b0aa9d;
+  --border: #3a362e;
+  --border-subtle: rgba(58, 54, 46, 0.9);
   --brand: #2dd4bf;
   --brand-strong: #7cefe0;
   --success: #34d399;
   --warning: #fbbf24;
-  --danger: #f87171;
+  --danger: #e0705c;
   --focus-ring: rgba(45, 212, 191, 0.28);
-  --shadow-sm: 0 12px 24px -22px rgba(0, 0, 0, 0.5);
-  --shadow-base: 0 18px 40px -28px rgba(0, 0, 0, 0.6);
-  --shadow-lg: 0 24px 52px -34px rgba(0, 0, 0, 0.7);
-  --header-border: rgba(49, 56, 70, 0.94);
-  --header-bg: rgba(15, 17, 23, 0.82);
+  --shadow-sm: 0 10px 22px -22px rgba(0, 0, 0, 0.42);
+  --shadow-base: 0 14px 34px -28px rgba(0, 0, 0, 0.5);
+  --shadow-lg: 0 20px 46px -34px rgba(0, 0, 0, 0.58);
+  --header-border: rgba(58, 54, 46, 0.94);
+  --header-bg: rgba(21, 19, 16, 0.82);
   --brand-soft: rgba(45, 212, 191, 0.14);
   --brand-soft-border: rgba(45, 212, 191, 0.22);
-  --danger-soft: rgba(248, 113, 113, 0.12);
-  --danger-soft-border: rgba(248, 113, 113, 0.2);
+  --danger-soft: rgba(224, 112, 92, 0.14);
+  --danger-soft-border: rgba(224, 112, 92, 0.22);
   --warning-soft: rgba(251, 191, 36, 0.12);
   --warning-soft-border: rgba(251, 191, 36, 0.18);
   --success-soft: rgba(52, 211, 153, 0.12);
   --success-soft-border: rgba(52, 211, 153, 0.2);
-  --info-soft: rgba(33, 38, 51, 0.92);
+  --info-soft: rgba(40, 37, 31, 0.92);
   --track-bg: rgba(71, 85, 105, 0.5);
   --skeleton-start: rgba(71, 85, 105, 0.42);
   --skeleton-mid: rgba(100, 116, 139, 0.58);
@@ -442,11 +443,11 @@ textarea {
 
 @keyframes highlightPulse {
   0% {
-    box-shadow: 0 0 0 0 rgba(15, 118, 110, 0.2);
+    box-shadow: 0 0 0 0 rgba(14, 114, 104, 0.2);
   }
 
   100% {
-    box-shadow: 0 0 0 12px rgba(15, 118, 110, 0);
+    box-shadow: 0 0 0 12px rgba(14, 114, 104, 0);
   }
 }
 
@@ -468,6 +469,25 @@ input[type='number'] {
 
 .scrollbar-hide::-webkit-scrollbar {
   display: none;
+}
+
+/* 账本语法工具类 (阶段四): 点线引导 + 账本行, 供 4.2/4.3 复用 */
+.dotted-leader {
+  flex: 1 1 auto;
+  min-width: 1.5rem;
+  align-self: baseline;
+  border-bottom: 2px dotted var(--border);
+  /* 相对字号上移, 让点线落在文字中线附近 (mock 中约 -3px) */
+  transform: translateY(-0.2em);
+}
+
+.ledger-row {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  padding: 0.62rem 0.1rem;
+  border-bottom: 1px solid var(--border-subtle);
+  font-size: 0.875rem;
 }
 
 @media (max-width: 640px) {

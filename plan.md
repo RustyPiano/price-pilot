@@ -1,6 +1,6 @@
 # Price Pilot 开发计划
 
-> 最后更新: 2026-03-17
+> 最后更新: 2026-07-07
 > 版本: 0.1.0 -> 目标 1.0.0
 
 ---
@@ -867,6 +867,192 @@ interface Product {
 
 ---
 
+## 阶段三: 快速对比模式 (免清单首屏)
+
+**当前状态**: 3.1 已完成 (2026-07-07 多智能体实现, Playwright 浏览器端到端验证通过; 3.2 未开始)
+
+**优先级**: P0 -- 建议先于 2.2-2.4 执行。架构迁移可以等, 产品"不如计算器顺手"的问题不能等。
+
+**背景与问题**:
+- 输入税: 对比前必须先建清单, 商品四字段全部必填 (`ProductEditorForm.tsx` 校验 name/price/quantity/unit), 而货架场景 90% 是同单位两三件商品的一次性决策
+- 访问税: 首页 (也是 PWA start_url) 是清单管理页, 不是对比工具
+- 真正的竞品是系统计算器: `7.9÷500` 六次按键出结果, 任何仪式感都会输
+- 已有的智能解析器 (`lib/smart-product-parser.ts`) 埋在清单页表单的名称栏里, 没有发挥降低输入成本的作用
+
+**方向 (2026-07-07 经三方案活原型验证后选定)**: 双行表格式做骨架 (系统数字键盘, 结构化字段, 零解析失败路径), 借计算器方案的节奏 (回车自动跳格), 智能解析降级为桌面端/名称栏增强。自建键盘方案不做。
+
+---
+
+### 3.1 QuickCompare 首屏组件
+
+#### 设计决策 (最可能需要调整的部分, 评审先看这里)
+
+**D1 信息架构 -- 不新增路由, 首页翻转**
+
+快速对比作为 hero 插入 `pages/index.tsx` 的 `<main>` 顶部, 现有「统计面板 + 新建清单」及清单卡片整体下移。canonical、structured data、`en.tsx` 双语路由全部不动。
+
+- 备选方案 (被否): 独立 `/quick` 路由 + PWA `start_url` 指向它。多一个路由要维护双语 SEO 和 hreflang, 且普通网页访客也应该第一眼看到工具而非清单管理。
+- `manifest.json` 增加 `shortcuts` (长按图标直达对比), `start_url` 保持 `/`。
+
+**D2 数据模型 -- 纯 React state, 不进 IndexedDB**
+
+```typescript
+interface QuickCompareRow {
+  id: string;        // buildEntityId('quick')
+  price: string;     // 保留原始输入字符串, 计算时 parseFloat
+  quantity: string;
+}
+```
+
+- 用字符串而非 number, 避免受控数字输入的光标跳动和 `0.` 中间态问题。
+- V1 无名称、无单位字段: 目标场景是同单位速比。单位选择器 (复用最近单位) 是后续增强, 本阶段不做。
+- 不写 IndexedDB: 用完即弃是默认行为, 刷新即清空。
+
+**D3 计算 -- 新建 `lib/quick-compare.ts`, 不复用 enrichProducts**
+
+`enrichProducts` 需要 exchangeRates + unitSystem, 快速模式下全是恒等转换, 强行复用读起来全是噪音。新建纯函数模块:
+
+```typescript
+interface QuickRowResult {
+  unitPrice: number | null;   // 无效输入为 null
+  isBest: boolean;            // 有效行 >= 2 时才可能为 true
+  pctAboveBest: number | null; // 非最优行相对最优的溢价百分比
+}
+function compareQuickRows(rows: QuickCompareRow[]): QuickRowResult[];
+function formatUnitPrice(value: number): string; // 动态精度: >=1 两位小数, >=0.01 三位, 更小四位
+```
+
+- 不用 `formatCurrencyAmount`: 它固定 2 位小数, 会把 ¥0.0398 和 ¥0.0412 抹成同一个数。
+- 并列最优: 单价相等的行都标 `isBest`。
+
+**D4 存为清单 -- "偶尔想留"的升级路径**
+
+结果出现后浮现「存为清单」按钮 (默认不可见, 不制造保存压力):
+
+- `createComparisonList` 生成清单: 名称默认「快速对比 M月D日」, 商品自动命名「商品 A/B/C」, unit 统一 `'piece'`, currency 按 locale 默认 (zh -> CNY, en -> USD)
+- 保存后 `router.push('/list/[id]')` 进入详情页, 用户可补名称/单位 -- 自然衔接现有工作台
+- 备选 (被否): 静默保存 + toast。存了就应该能立刻编辑。
+
+**D5 交互节奏 (借计算器方案的手感)**
+
+- 输入框 `inputmode="decimal"` + `enterkeyhint="next"`, 回车/Next 自动跳下一格, 手不离开数字键盘
+- 初始 2 行; 末行两格填满自动追加空行, 上限 6 行 (超出提示转清单)
+- 有效行 >= 2 时实时反馈: 最优行高亮 + 「最划算」徽章, 其余行「贵 X%」; 顶部结果横幅显示最优商品与最大差价
+- 输入过滤: 仅数字与一个小数点, 最长 10 字符
+- 自动聚焦: 桌面端 (hover 介质) 首格 autoFocus; 移动端不自动弹键盘, 避免布局跳动
+
+#### 实施步骤
+
+1. **`lib/quick-compare.ts`** -- 纯函数 + 单元测试 (除零、单行、并列最优、动态精度)
+2. **`components/QuickCompare.tsx`** -- hero 组件: 行状态管理、焦点跳转、自动加行、结果横幅、存为清单
+3. **`pages/index.tsx` / `pages/en.tsx`** -- hero 插入 main 顶部, 现有内容下移
+4. **存为清单接线** -- `createComparisonList` + `saveComparisonList` + 路由跳转
+5. **`constants/translations.ts`** -- 新增中英 key (标题、字段标签、徽章、按钮、上限提示)
+6. **`public/manifest.json`** -- 添加 `shortcuts`
+7. **组件测试** -- 焦点流转、自动加行、结果计算、保存跳转 (Testing Library)
+
+#### 涉及文件
+
+- `lib/quick-compare.ts` -- 新建
+- `tests/lib/quick-compare.test.ts` -- 新建
+- `components/QuickCompare.tsx` -- 新建
+- `tests/components/QuickCompare.test.tsx` -- 新建
+- `pages/index.tsx`, `pages/en.tsx` -- 插入 hero
+- `constants/translations.ts` -- 新增 key
+- `public/manifest.json` -- shortcuts
+
+#### 验收标准
+
+- [x] 打开首页无需任何导航即可开始输入; 两件商品从打开到出结果, 全程只用数字键盘
+- [x] 回车自动跳格, 全键盘 (Tab/Enter) 可完成整个流程
+- [x] 第二行填完立即出结果; 填满末行自动加行, 到 6 行提示转清单
+- [x] 「存为清单」保存后跳转详情页, 单价与快速模式显示一致 (IndexedDB 落库数据核对无误; 详情页固定 2 位小数的既有显示精度差异见附录)
+- [x] 中英双语、暗色模式均正常 (Chromium 桌面 + 420px 视口验证; iOS Safari / Android Chrome 真机待验证)
+- [x] `npm run test:run` 通过 (12 文件 / 47 测试), `lib/quick-compare.ts` 12 个用例
+- [x] 现有清单管理、分享、备份功能不受影响 (首页原有区块完整下移, 既有 39 个测试无回归)
+
+---
+
+### 3.2 后续增强 (本阶段不做, 记录意图)
+
+| 项目 | 说明 |
+|------|------|
+| 快速行可选单位 chip | 复用最近单位, 支持 500g vs 1kg 跨规格速比 |
+| 智能解析进快速模式 | 桌面端一行 `19.9 500` 回车即一行; 解析器已有, 扩展纯数字模式 |
+| iOS 快捷指令 | 个人辅助入口, 不进产品 |
+| 离线闭环 | 依赖 2.3 PWA (Serwist) 完成后, 覆盖超市无信号场景 |
+
+---
+
+## 阶段四: 视觉重设计「精密账本 + 小票分享」
+
+**当前状态**: 已完成 (2026-07-07 四阶段多智能体实现 + 终审修正, Playwright 端到端验证通过)
+
+**优先级**: P1
+
+**方向**: 用户从三个候选方向 (电子小票 / 货架价签 / 精密账本, mock 见 `docs/design/redesign-directions.html`) 中选定组合: **C 精密账本做全站底盘 + A 小票美学专用于分享图**。
+
+**设计原则 (全阶段共同遵守)**:
+- **框只剩一层**: 页面最多一层容器 (`.panel` 或一体分组框), 容器内部用发丝线 (`--border-subtle`) 和留白组织, `.subpanel` 式的盒中盒逐步废弃
+- **状态靠染色不靠描边**: 最优/选中等状态用整行浅染 (`--brand-soft`), 不再加边框
+- **数字是排印主角**: 金额/单价/百分比一律用等宽数字字体 (`--font-num`) + `tabular-nums`; 单价用「价格 lockup」排印 — 货币符号小号上标 + 金额大号 + `/单位` 小注
+- **点线引导**: 列表行的「名称 → 数字」之间用点线 (dotted leader) 连接, 服务扫读
+- **语义色纪律**: 茶青 (`--brand`) 只表达「省/最优」, 暖红 (`--danger`) 表达「贵/更差/危险」, 不再混用
+- 双主题: 所有新 token 同步定义暗色等价值, 保持对比度; 小票分享图例外 (固定浅色小票世界)
+
+---
+
+### 4.1 Token 层与基础语法
+
+1. **`styles/globals.css` 色板更新** (light):
+   - `--canvas: #f6f4ee`, `--surface: #fdfcf9`, `--text-primary: #21252b`, `--text-secondary: #6e6a5e`
+   - `--border: #dcd7ca`, `--border-subtle: #e8e4d8` (及配套 soft/header 变量同步微调)
+   - `--brand: #0e7268` (brand-strong 相应加深), `--danger: #c24d3a` (暖化, 同时服务「贵」与破坏性操作)
+   - dark 主题: 保持现有暗色骨架, 按同样的暖化思路微调 danger (如 `#e0705c`), 其余对齐新 light 值的明度关系, 保证对比度
+   - 阴影整体减淡一档 (现有 shadow 偏重, 账本语法下卡片更少、阴影应更轻)
+   - 新增 `--font-num: 'SF Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace`
+2. **新组件 `components/PriceLockup.tsx`**: props 形如 `{ amount: string; symbol: string; per?: string; tone?: 'default' | 'best'; size?: 'sm' | 'md' | 'lg' }` — 渲染 `<sup>符号</sup> 大号金额 <span>/单位</span>`, 等宽 + tabular-nums; `tone='best'` 用 brand 色
+3. **工具类** (globals.css): `.dotted-leader` (点线引导, flex 内自伸缩), `.ledger-row` (账本行基础), 供 4.2/4.3 复用
+4. **QuickCompare 接入**: 行内单价改用 `PriceLockup` (替换现有手写 span), 「贵 X%」「最划算」徽章样式不变
+
+### 4.2 首页账本化 (`pages/index.tsx`)
+
+1. 统计块: 三个 `subpanel` 盒子 → 一行三组「大数字 + 小标签」, 组间竖向发丝线分隔, 数字用 `--font-num`
+2. 清单列表: 卡片网格 → 账本行 — `清单名 ····· n 件 · 更新时间 →`, 行间发丝线, hover 整行浅染; 归档区同语法
+3. 新建清单表单与导入导出按钮: 保持功能与位置, 去掉多余的盒中盒层级
+4. `pages/en.tsx` 复用 HomePage, 无需单独改动
+
+### 4.3 详情页账本化 (`components/ProductList.tsx` 等)
+
+1. 商品对比结果: 商品卡片 → 一体分组框内的账本行 (同 QuickCompare 语法): 序号/名称 + 规格, 右侧 `PriceLockup` 单价, 最优行整行染色 + 徽章; 保留编辑/删除按钮与 undo 流程
+2. `PriceComparisonBars`: 去外框, 条形图保留, 标签数字用 `--font-num`
+3. `SavingsCalculator` / `UnitConverter` / `UnitManager` / `AddProductForm`: 去 subpanel 嵌套, 面板内部用发丝线分区; 表单输入框样式保持现状 (描边输入框在"编辑"语境下保留)
+4. 功能零回归: 增删改、undo、分享、汇率重试、分组切换全部不变
+
+### 4.4 小票分享图 (A 的味道)
+
+1. 新组件 `components/ReceiptShareCard.tsx`: 离屏渲染的小票 DOM —
+   - 头部: `PRICE PILOT` 字标 (等宽、加字距) + 日期编号行 + 虚线分隔
+   - 商品列表: `名称 规格 ····· 单价` 点线行, 最优行盖红圈章「最划算」(旋转 -14°, `#c43c2b` 描边圆章)
+   - 合计块: 双线分隔 + `商品 X 胜出 / 省 Y%`
+   - 底部: 条码装饰条 + 站点名; 上下缘锯齿撕票边
+   - 固定浅色小票配色 (`#fbfaf5` 纸 / `#26241e` 墨 / `#c43c2b` 章), 不随主题切换; 文案走翻译字典
+2. `hooks/useShareImage.ts`: html2canvas 的渲染目标从截取页面结果区改为该离屏小票节点; 预览 modal 与下载流程不变
+3. 分享图在中英文下都正确渲染
+
+**涉及文件**: `styles/globals.css`, `components/PriceLockup.tsx` (新), `components/QuickCompare.tsx`, `pages/index.tsx`, `components/ProductList.tsx`, `components/PriceComparisonBars.tsx`, `components/SavingsCalculator.tsx`, `components/ToolPanel.tsx`, `components/ReceiptShareCard.tsx` (新), `hooks/useShareImage.ts`, `constants/translations.ts`
+
+**验收标准**:
+- [x] 双主题下所有页面无可读性/对比度问题 (Playwright 截图审查, light/dark × 首页/详情页/分享 modal)
+- [x] 全站金额/单价/百分比使用等宽数字与 lockup 排印 (终审补充: 详情页与条形图单价由固定 2 位小数改为 `formatUnitPrice` 动态精度, 修复三件商品同显 ¥0.04 的矛盾)
+- [x] 首页与详情页不再存在盒中盒嵌套 (终审补齐首页底部场景/FAQ 区的 subpanel → 发丝线分隔)
+- [x] 分享图输出为小票样式, 中英文均正确 (透明锯齿撕边在暗色 modal 下成立)
+- [x] `npm run test:run` 全绿 (12 文件 / 47 测试), 功能零回归
+
+**实现记录**: 4 个 Opus agent 按 4.1→4.4 串行实施, 每个自带 Playwright 双主题截图自查; 终审 (主会话) 补充 3 处修正 — 单价动态精度、SEO 区去盒、快速对比横幅改 brand-soft band。附带行为收敛: 首页清单行不再展示最优摘要, `buildSummaries` 逐清单拉汇率的逻辑随之移除 (首页零汇率请求)。
+
+---
+
 ## 附录: 其他待改进项 (后续迭代)
 
 以下不在短期/中期计划内, 但值得记录:
@@ -879,6 +1065,8 @@ interface Product {
 | **a11y** | 对比柱状图文本替代 | PriceComparisonBars 添加 `aria-label` |
 | **工程** | PostCSS autoprefixer | `postcss.config.mjs` 添加 autoprefixer 插件 |
 | **工程** | 组件级 Error Boundary | 为 ProductList、UnitManager 等添加独立错误边界 |
+| **Bug** | dev 下详情页首载必报「汇率请求超时」 | StrictMode 双挂载 + `fetchExchangeRates` in-flight 去重返回已 abort 的 promise (`constants/currencies.ts` 的 `requestKey` 未区分不同 AbortSignal); 生产无 StrictMode 双挂载不受影响, 点「重试」可恢复 (2026-07-07 阶段三验证时发现) |
+| ~~Bug~~ | ~~详情页单价 < ¥0.01 时不同商品显示相同~~ | 已修复 (2026-07-07 阶段四终审): `ProductList` 与 `PriceComparisonBars` 的单价显示改用 `formatUnitPrice` 动态精度; `formatCurrencyAmount` 仍用于金额合计 (省钱计算器等), 语义正确 |
 | **工程** | `React.lazy` / `Suspense` | UnitConverter, UnitManager, SavingsCalculator 懒加载 |
 | **工程** | 错误监控 | 接入 Sentry 等外部错误上报服务 |
 | **工程** | E2E 测试 | Playwright 关键用户路径测试 |
