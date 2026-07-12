@@ -1,6 +1,6 @@
 import { act, renderHook } from '@testing-library/react';
 import { createComparisonList } from '@/lib/comparison-lists';
-import { useShareImage } from '@/hooks/useShareImage';
+import { truncateReceiptName, useShareImage } from '@/hooks/useShareImage';
 
 const { html2canvas, toast } = vi.hoisted(() => ({
   html2canvas: vi.fn(),
@@ -70,5 +70,13 @@ describe('useShareImage', () => {
 
     // 离屏容器截图后应被清理, 不残留在文档中。
     expect(document.body.querySelectorAll('div[style*="-9999px"]').length).toBe(0);
+  });
+
+  it('truncates long receipt item names with width-weighted budget', () => {
+    expect(truncateReceiptName('可乐 2L')).toBe('可乐 2L');
+    expect(truncateReceiptName('无糖零度可乐家庭分享装超值特惠版')).toBe('无糖零度可乐家庭分享装…');
+    const truncated = truncateReceiptName('Extra Large Family Pack Premium Cola');
+    expect(truncated.endsWith('…')).toBe(true);
+    expect(truncated.length).toBeLessThan(24);
   });
 });

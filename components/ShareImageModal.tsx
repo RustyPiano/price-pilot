@@ -1,5 +1,7 @@
+import { useRef } from 'react';
 import { Download, X } from 'lucide-react';
 import { useLanguage } from '@/context/LanguageContext';
+import { useModalFocusTrap } from '@/hooks/useModalFocusTrap';
 import type { ImagePreview } from '@/types';
 
 interface ShareImageModalProps {
@@ -14,9 +16,12 @@ export default function ShareImageModal({
   onDownload,
 }: ShareImageModalProps) {
   const { t } = useLanguage();
+  const dialogRef = useRef<HTMLDivElement | null>(null);
+  useModalFocusTrap(dialogRef, { active: true, onClose });
 
   return (
     <div
+      ref={dialogRef}
       role="dialog"
       aria-modal="true"
       className="fixed inset-0 z-[70] overflow-y-auto bg-[color:var(--overlay-backdrop)] px-4 py-6 backdrop-blur-sm"

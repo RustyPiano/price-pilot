@@ -1,5 +1,7 @@
+import { useRef } from 'react';
 import { X } from 'lucide-react';
 import { useLanguage } from '@/context/LanguageContext';
+import { useModalFocusTrap } from '@/hooks/useModalFocusTrap';
 
 interface ShareLinkModalProps {
   url: string;
@@ -8,9 +10,12 @@ interface ShareLinkModalProps {
 
 export default function ShareLinkModal({ url, onClose }: ShareLinkModalProps) {
   const { t } = useLanguage();
+  const dialogRef = useRef<HTMLDivElement | null>(null);
+  useModalFocusTrap(dialogRef, { active: true, onClose });
 
   return (
     <div
+      ref={dialogRef}
       role="dialog"
       aria-modal="true"
       className="fixed inset-0 z-[70] flex items-center justify-center bg-[color:var(--overlay-backdrop)] px-4 py-6 backdrop-blur-sm"

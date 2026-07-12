@@ -8,6 +8,7 @@ import LanguageToggle from '@/components/LanguageToggle';
 import PageHeader from '@/components/PageHeader';
 import QuickCompare from '@/components/QuickCompare';
 import { useLanguage } from '@/context/LanguageContext';
+import { useModalFocusTrap } from '@/hooks/useModalFocusTrap';
 import { downloadAsJson, exportAllData, importFromJson } from '@/lib/data-backup';
 import {
   createComparisonList,
@@ -48,11 +49,21 @@ export function HomePage() {
   const [pendingImportFile, setPendingImportFile] = useState<File | null>(null);
   const [isImporting, setIsImporting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const importDialogRef = useRef<HTMLDivElement | null>(null);
+  useModalFocusTrap(importDialogRef, {
+    active: pendingImportFile !== null,
+    onClose: () => {
+      if (!isImporting) {
+        setPendingImportFile(null);
+      }
+    },
+  });
   const { t, locale } = useLanguage();
   const numberLocale = getNumberLocale(locale);
   const homePath = router.pathname === '/en' ? '/en' : '/';
   const canonicalUrl = buildAbsoluteUrl(DEFAULT_SITE_ORIGIN, homePath);
   const siteRootUrl = DEFAULT_SITE_ORIGIN ? buildAbsoluteUrl(DEFAULT_SITE_ORIGIN, '/') : null;
+  const ogImageUrl = DEFAULT_SITE_ORIGIN ? buildAbsoluteUrl(DEFAULT_SITE_ORIGIN, '/og.png') : null;
   const homeAbsoluteUrl = DEFAULT_SITE_ORIGIN ? buildAbsoluteUrl(DEFAULT_SITE_ORIGIN, homePath) : null;
   const alternateLinks = getAlternateHomeLinks(DEFAULT_SITE_ORIGIN);
   const guideContent = seoGuideContent[locale];
@@ -315,9 +326,13 @@ export function HomePage() {
         <meta property="og:url" content={canonicalUrl} />
         <meta property="og:locale" content={localeTag} />
         <meta property="og:locale:alternate" content={locale === 'zh' ? 'en_US' : 'zh_CN'} />
-        <meta name="twitter:card" content="summary" />
+        {ogImageUrl && <meta property="og:image" content={ogImageUrl} />}
+        {ogImageUrl && <meta property="og:image:width" content="1200" />}
+        {ogImageUrl && <meta property="og:image:height" content="630" />}
+        <meta name="twitter:card" content={ogImageUrl ? 'summary_large_image' : 'summary'} />
         <meta name="twitter:title" content={homeTitle} />
         <meta name="twitter:description" content={homeDescription} />
+        {ogImageUrl && <meta name="twitter:image" content={ogImageUrl} />}
         <link rel="canonical" href={canonicalUrl} />
         {alternateLinks.map((link) => (
           <link key={link.hrefLang} rel="alternate" hrefLang={link.hrefLang} href={link.href} />
@@ -340,7 +355,7 @@ export function HomePage() {
           <LanguageToggle />
         </PageHeader>
 
-        <main className="mx-auto max-w-5xl space-y-5 px-4 py-5 sm:space-y-6 sm:py-6">
+        <main id="main-content" className="mx-auto max-w-5xl space-y-5 px-4 py-5 sm:space-y-6 sm:py-6">
           <QuickCompare />
 
           <section className="grid gap-4 lg:grid-cols-[1.25fr_0.95fr]">
@@ -566,6 +581,7 @@ export function HomePage() {
 
       {pendingImportFile && (
         <div
+          ref={importDialogRef}
           role="dialog"
           aria-modal="true"
           className="fixed inset-0 z-[70] flex items-center justify-center bg-[color:rgba(11,15,22,0.55)] px-4 py-6 backdrop-blur-sm"

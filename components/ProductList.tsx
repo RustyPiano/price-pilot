@@ -88,10 +88,15 @@ export default function ProductList({
       try {
         const rates = await fetchExchangeRates(baseCurrency, { signal: controller.signal });
         setExchangeRates(rates);
-        window.localStorage.setItem(cacheKey, JSON.stringify({
-          rates,
-          savedAt: new Date().toISOString(),
-        }));
+        try {
+          window.localStorage.setItem(cacheKey, JSON.stringify({
+            rates,
+            savedAt: new Date().toISOString(),
+          }));
+        } catch (cacheError) {
+          // 写缓存失败 (如 iOS 隐私模式配额为 0) 不能把成功的拉取误报为错误。
+          console.error('Failed to cache exchange rates:', cacheError);
+        }
       } catch (error) {
         const cachedRates = (() => {
           try {
@@ -402,7 +407,7 @@ export default function ProductList({
                           type="button"
                           onClick={() => onRemoveProduct(product.id)}
                           disabled={actionsDisabled}
-                          aria-label={locale === 'zh' ? '删除商品' : 'Delete item'}
+                          aria-label={t('deleteItem')}
                           className="icon-btn icon-btn-danger"
                         >
                           <X className="h-4 w-4" />

@@ -12,8 +12,11 @@ import {
   getComparisonList,
   saveComparisonList,
 } from '@/lib/comparison-lists';
+import { buildAbsoluteUrl, DEFAULT_SITE_ORIGIN } from '@/lib/seo';
 import { decodeSharedComparisonList } from '@/lib/share-utils';
 import type { ComparisonList } from '@/types';
+
+const OG_IMAGE_URL = DEFAULT_SITE_ORIGIN ? buildAbsoluteUrl(DEFAULT_SITE_ORIGIN, '/og.png') : null;
 
 type PageStatus = 'loading' | 'ready' | 'error' | 'not_found';
 
@@ -103,6 +106,9 @@ export default function ComparisonListPage() {
         <meta property="og:type" content="website" />
         <meta property="og:title" content={comparisonList ? `${comparisonList.name} · Price Pilot` : 'Price Pilot'} />
         <meta property="og:description" content={locale === 'zh' ? '在 Price Pilot 中查看这份商品单价对比清单。' : 'View this unit price comparison list in Price Pilot.'} />
+        {OG_IMAGE_URL && <meta property="og:image" content={OG_IMAGE_URL} />}
+        {OG_IMAGE_URL && <meta name="twitter:card" content="summary_large_image" />}
+        {OG_IMAGE_URL && <meta name="twitter:image" content={OG_IMAGE_URL} />}
       </Head>
 
       <div className="page-shell">
@@ -117,7 +123,7 @@ export default function ComparisonListPage() {
           <LanguageToggle />
         </PageHeader>
 
-        <main className="mx-auto max-w-5xl px-4 py-5 sm:py-6">
+        <main id="main-content" className="mx-auto max-w-5xl px-4 py-5 sm:py-6">
           {status === 'loading' && (
             <div className="panel p-6 text-center text-sm text-muted">{t('listLoading')}</div>
           )}

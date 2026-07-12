@@ -27,6 +27,8 @@ export default function ToolPanel({
         <button
           type="button"
           onClick={() => onTogglePanel('converter')}
+          aria-expanded={activePanel === 'converter'}
+          aria-controls="tool-panel-converter"
           className={`btn text-sm ${activePanel === 'converter' ? 'btn-primary' : 'btn-secondary'}`}
         >
           <ArrowLeftRight className="h-4 w-4" />
@@ -35,6 +37,8 @@ export default function ToolPanel({
         <button
           type="button"
           onClick={() => onTogglePanel('unit-manager')}
+          aria-expanded={activePanel === 'unit-manager'}
+          aria-controls="tool-panel-unit-manager"
           className={`btn text-sm ${activePanel === 'unit-manager' ? 'btn-primary' : 'btn-secondary'}`}
         >
           <Settings className="h-4 w-4" />
@@ -44,6 +48,7 @@ export default function ToolPanel({
 
       {activePanel === 'unit-manager' && (
         <div
+          id="tool-panel-unit-manager"
           className="animate-fade-in border-t pt-4"
           style={{ borderColor: 'var(--border-subtle)' }}
         >
@@ -53,6 +58,7 @@ export default function ToolPanel({
 
       {activePanel === 'converter' && (
         <div
+          id="tool-panel-converter"
           className="animate-fade-in border-t pt-4"
           style={{ borderColor: 'var(--border-subtle)' }}
         >

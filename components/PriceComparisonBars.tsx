@@ -58,7 +58,8 @@ export default function PriceComparisonBars({
                   {currencySymbol}{formatUnitPrice(product.unitPrice)}/{t(`units.${product.baseUnit}`) || product.baseUnit}
                 </span>
               </div>
-              <div className="result-bar-track">
+              {/* 名称与单价已是可见文本, 条形本身纯装饰。 */}
+              <div className="result-bar-track" aria-hidden="true">
                 <div
                   className={`result-bar-fill ${barClassName}`}
                   style={{ width: `${Math.max(width, 6)}%` }}

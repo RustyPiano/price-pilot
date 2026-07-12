@@ -69,16 +69,21 @@ export async function fetchExchangeRates(
   options: RequestInit = {}
 ): Promise<ExchangeRates> {
   const normalizedCurrency = baseCurrency.toUpperCase();
-  const requestKey = `${normalizedCurrency}:${options.signal ? 'abortable' : 'shared'}`;
 
-  if (inflightRequests.has(requestKey)) {
-    return inflightRequests.get(requestKey) as Promise<ExchangeRates>;
+  // 带 signal 的请求不共享: 复用会让一个调用方的 abort 连坐其他调用方
+  // (StrictMode 双挂载曾因此在详情页首载必报「汇率请求超时」)。
+  if (options.signal) {
+    return fetchExchangeRatesFromApi(normalizedCurrency, options);
+  }
+
+  if (inflightRequests.has(normalizedCurrency)) {
+    return inflightRequests.get(normalizedCurrency) as Promise<ExchangeRates>;
   }
 
   const request = fetchExchangeRatesFromApi(normalizedCurrency, options).finally(() => {
-    inflightRequests.delete(requestKey);
+    inflightRequests.delete(normalizedCurrency);
   });
 
-  inflightRequests.set(requestKey, request);
+  inflightRequests.set(normalizedCurrency, request);
   return request;
 }

@@ -20,6 +20,9 @@ export const RECEIPT_WIDTH = 360;
 const TOOTH = 12;
 const TEAR_HEIGHT = 10;
 
+/** 红圈章尺寸 (px), 供 useShareImage 预绘 stamp 位图使用。 */
+export const STAMP_SIZE = 52;
+
 export interface ReceiptShareItem {
   /** 商品名 (已本地化的原始数据)。 */
   name: string;
@@ -46,7 +49,52 @@ export interface ReceiptShareCardProps {
   winnerName: string | null;
   /** 节省百分比字符串, 例如 "9%"; 与 winnerName 同时存在才渲染。 */
   savingsPct: string | null;
+  /**
+   * 预绘好的红圈章位图 (data URL)。html2canvas 无法正确渲染旋转元素内的文字
+   * (实测章面文字掉到圈底), 因此章由 useShareImage 用原生 canvas 预绘, 这里只放 <img>。
+   */
+  stampImageUrl: string | null;
   t: Translate;
+}
+
+/** canvas 的 font 简写解析比 CSS 严格, ui-monospace 之类的关键字会让整串失效, 用精简栈。 */
+const STAMP_FONT_STACK = "'SF Mono', Menlo, Consolas, 'PingFang SC', 'Hiragino Sans GB', monospace";
+
+/**
+ * 用原生 canvas 预绘红圈章, 返回 data URL (环境不支持时返回 null)。
+ * html2canvas 无法正确渲染旋转元素内的文字 (实测章面文字掉到圈底), 位图是唯一忠实路径。
+ */
+export function renderStampImage(label: string): string | null {
+  const scale = 3;
+  const canvas = document.createElement('canvas');
+  canvas.width = STAMP_SIZE * scale;
+  canvas.height = STAMP_SIZE * scale;
+  const context = canvas.getContext('2d');
+  if (!context) {
+    return null;
+  }
+
+  const center = STAMP_SIZE / 2;
+  context.scale(scale, scale);
+  context.translate(center, center);
+  context.rotate((-14 * Math.PI) / 180);
+  context.globalAlpha = 0.92;
+
+  context.beginPath();
+  context.arc(0, 0, center - 1.25, 0, Math.PI * 2);
+  context.fillStyle = 'rgba(251, 250, 245, 0.55)';
+  context.fill();
+  context.lineWidth = 2.5;
+  context.strokeStyle = STAMP;
+  context.stroke();
+
+  context.fillStyle = STAMP;
+  context.font = `800 10px ${STAMP_FONT_STACK}`;
+  context.textAlign = 'center';
+  context.textBaseline = 'middle';
+  context.fillText(label, 0, 0.5);
+
+  return canvas.toDataURL('image/png');
 }
 
 function TearEdge({ side }: { side: 'top' | 'bottom' }) {
@@ -75,14 +123,32 @@ function TearEdge({ side }: { side: 'top' | 'bottom' }) {
   );
 }
 
+// 虚线/点线一律用真实元素拼接 — html2canvas 对 repeating-linear-gradient 的还原不可靠
+// (实测虚线整条丢失、点线糊成实线), 与 Barcode 同一思路。
 function DashedRule() {
   return (
     <div
       aria-hidden
+      style={{ display: 'flex', gap: 5, height: 2, margin: '14px 0', overflow: 'hidden' }}
+    >
+      {Array.from({ length: 30 }).map((_, index) => (
+        <div key={index} style={{ flex: '0 0 auto', width: 6, height: 2, background: DASH }} />
+      ))}
+    </div>
+  );
+}
+
+// 点线引导用 border-bottom dotted — html2canvas 对 transform/嵌套 flex 定位不可靠,
+// 边框绘制是其核心路径。baseline 对齐下空元素底边即基线, 点线恰好垫在基线上。
+function DottedLeader() {
+  return (
+    <span
+      aria-hidden
       style={{
-        height: 2,
-        margin: '14px 0',
-        backgroundImage: `repeating-linear-gradient(90deg, ${DASH} 0 6px, transparent 6px 11px)`,
+        flex: 1,
+        minWidth: 14,
+        height: 5,
+        borderBottom: `2px dotted ${DOT}`,
       }}
     />
   );
@@ -121,7 +187,15 @@ function Barcode() {
   );
 }
 
-function ItemRow({ item, stampLabel }: { item: ReceiptShareItem; stampLabel: string }) {
+function ItemRow({
+  item,
+  stampLabel,
+  stampImageUrl,
+}: {
+  item: ReceiptShareItem;
+  stampLabel: string;
+  stampImageUrl: string | null;
+}) {
   const dim = item.amount === '—';
   const rowColor = dim ? '#b5af9e' : INK;
 
@@ -137,59 +211,23 @@ function ItemRow({ item, stampLabel }: { item: ReceiptShareItem; stampLabel: str
         color: rowColor,
       }}
     >
-      <span
-        style={{
-          fontWeight: 700,
-          whiteSpace: 'nowrap',
-          overflow: 'hidden',
-          textOverflow: 'ellipsis',
-          maxWidth: '52%',
-        }}
-      >
-        {item.name}
-      </span>
+      {/* 名称在 buildReceiptModel 中已 JS 截断 — CSS 的 overflow+ellipsis 会让
+          html2canvas 在文字下画出一条实线 (实测), 不能用。 */}
+      <span style={{ fontWeight: 700, whiteSpace: 'nowrap' }}>{item.name}</span>
       <span style={{ color: MUTED, fontSize: 11, whiteSpace: 'nowrap' }}>{item.spec}</span>
-      <span
-        aria-hidden
-        style={{
-          flex: 1,
-          minWidth: 14,
-          height: 2,
-          transform: 'translateY(-3px)',
-          backgroundImage: `repeating-linear-gradient(90deg, ${DOT} 0 2px, transparent 2px 5px)`,
-        }}
-      />
+      <DottedLeader />
       {/* 红圈章渲染在金额之前, 让金额绘制在章面之上, 保证「最优价」始终可读。 */}
-      {item.isBest && (
-        <span
-          style={{
-            position: 'absolute',
-            right: -4,
-            top: -30,
-            width: 52,
-            height: 52,
-            padding: '0 5px',
-            boxSizing: 'border-box',
-            border: `2.5px solid ${STAMP}`,
-            borderRadius: '50%',
-            color: STAMP,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            fontSize: 10,
-            fontWeight: 800,
-            letterSpacing: '0.04em',
-            transform: 'rotate(-14deg)',
-            opacity: 0.92,
-            background: 'rgba(251, 250, 245, 0.55)',
-            textAlign: 'center',
-            lineHeight: 1.15,
-          }}
-        >
-          {stampLabel}
-        </span>
+      {item.isBest && stampImageUrl && (
+        // eslint-disable-next-line @next/next/no-img-element -- 离屏小票节点, 需原生 img 供 html2canvas 采样
+        <img
+          src={stampImageUrl}
+          alt={stampLabel}
+          width={STAMP_SIZE}
+          height={STAMP_SIZE}
+          style={{ position: 'absolute', right: -4, top: -30 }}
+        />
       )}
-      <span style={{ position: 'relative', fontWeight: dim ? 400 : 700, whiteSpace: 'nowrap', fontVariantNumeric: 'tabular-nums' }}>
+      <span style={{ position: 'relative', flexShrink: 0, fontWeight: dim ? 400 : 700, whiteSpace: 'nowrap', fontVariantNumeric: 'tabular-nums' }}>
         {item.symbol}
         {item.amount}
         {item.pct !== null && (
@@ -211,11 +249,12 @@ export default function ReceiptShareCard({
   items,
   winnerName,
   savingsPct,
+  stampImageUrl,
   t,
 }: ReceiptShareCardProps) {
   const showVerdict = winnerName !== null && savingsPct !== null;
 
-  const stampLabel = t('bestDeal');
+  const stampLabel = t('shareReceiptStamp');
   const winnerLine = winnerName ? t('shareReceiptWinner').replace('{name}', winnerName) : '';
   const savingsLine = savingsPct ? t('shareReceiptSavings').replace('{pct}', savingsPct) : '';
 
@@ -280,7 +319,9 @@ export default function ReceiptShareCard({
         </p>
 
         {items.length > 0 ? (
-          items.map((item, index) => <ItemRow key={index} item={item} stampLabel={stampLabel} />)
+          items.map((item, index) => (
+            <ItemRow key={index} item={item} stampLabel={stampLabel} stampImageUrl={stampImageUrl} />
+          ))
         ) : (
           <div style={{ padding: '7px 0', fontSize: 13, color: MUTED }}>—</div>
         )}

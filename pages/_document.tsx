@@ -1,4 +1,11 @@
-import { Head, Html, Main, NextScript } from 'next/document';
+import NextDocument, {
+  Head,
+  Html,
+  Main,
+  NextScript,
+  type DocumentContext,
+  type DocumentInitialProps,
+} from 'next/document';
 
 const themeInitScript = `
 (function () {
@@ -14,9 +21,11 @@ const themeInitScript = `
 })();
 `;
 
-export default function Document() {
+type DocumentProps = DocumentInitialProps & { pathname: string };
+
+export default function Document({ pathname }: DocumentProps) {
   return (
-    <Html lang="zh-CN" suppressHydrationWarning>
+    <Html lang={pathname === '/en' ? 'en-US' : 'zh-CN'} suppressHydrationWarning>
       <Head>
         <script
           dangerouslySetInnerHTML={{ __html: themeInitScript }}
@@ -29,3 +38,8 @@ export default function Document() {
     </Html>
   );
 }
+
+Document.getInitialProps = async (ctx: DocumentContext): Promise<DocumentProps> => {
+  const initialProps = await NextDocument.getInitialProps(ctx);
+  return { ...initialProps, pathname: ctx.pathname };
+};

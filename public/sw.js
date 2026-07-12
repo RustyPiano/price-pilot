@@ -1,5 +1,5 @@
-const CACHE_NAME = 'price-pilot-v2';
-const APP_SHELL = ['/', '/manifest.json', '/icon.svg', '/icon-maskable.svg', '/grid.svg'];
+const CACHE_NAME = 'price-pilot-v3';
+const APP_SHELL = ['/', '/en', '/manifest.json', '/icon.svg', '/icon-maskable.svg', '/grid.svg'];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(

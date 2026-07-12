@@ -18,7 +18,12 @@ function createEmptyRow(): QuickCompareRow {
 }
 
 function createInitialRows(): QuickCompareRow[] {
-  return Array.from({ length: INITIAL_ROWS }, createEmptyRow);
+  // 初始行参与 SSR, 必须用确定性 id — 随机 id 会让服务端与客户端各生成一份, 触发 hydration mismatch。
+  return Array.from({ length: INITIAL_ROWS }, (_, index) => ({
+    id: `quick-initial-${index}`,
+    price: '',
+    quantity: '',
+  }));
 }
 
 // 只保留数字与至多一个小数点, 并截断到 10 字符。
