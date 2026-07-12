@@ -1,10 +1,15 @@
 {
   "version": 1,
   "skills": {
-    "supabase-postgres-best-practices": {
-      "source": "supabase/agent-skills",
+    "ai-seo": {
+      "source": "coreyhaines31/marketingskills",
       "sourceType": "github",
-      "computedHash": "9c87c315aed143ee3b34bec8117100f5035e0df09e6b23e1ecc772cff434c9ad"
+      "computedHash": "5f7ce5ccdb2b0dce5e1ea7f3ed8bf17070b790865e91725ca8908e6ec829e164"
+    },
+    "seo-audit": {
+      "source": "coreyhaines31/marketingskills",
+      "sourceType": "github",
+      "computedHash": "ec3109d213dde1747614ad1112ef0e498e04b24e464538968e156dfbfadb2121"
     }
   }
 }
