@@ -34,16 +34,18 @@
 
 ```bash
 npm run dev        # 开发（默认 3000；验证时用别的端口避免撞用户会话）
-npm run test:run   # 全量测试（当前 12 文件 / 47 用例）
+npm run test:run   # 全量测试（当前 13 文件 / 50 用例）
 npm run build      # 生产构建
-npm run lint
+# npm run lint 不可用——ESLint 从未配置过，运行会卡在交互式初始化提示
 ```
 > 裸 `tsc --noEmit` 会在 `tests/**` 报一批 vitest 全局类型错误，是**既有环境问题**，与改动无关；只看源码目录是否干净。
 
 ## 验证与已知坑
 
 - 改了产品代码后用 **verify skill**（`.claude/skills/verify/SKILL.md`）：起 dev server + Playwright 驱动，别只跑测试。
-- ⚠️ **dev 环境详情页首载必报「汇率请求超时」**——StrictMode 双挂载 + 汇率请求去重的既有 bug，生产不受影响，截图/验证前先点「重试」。
+- ⚠️ **分享小票（`ReceiptShareCard`）的装饰只能用真实元素/边框/位图**：html2canvas 不还原 repeating-gradient（虚线整条丢失）、CSS `text-overflow: ellipsis`（文字下多画一条实线）、flex/百分比 translate 居中、旋转元素内的文字（红章文字掉到圈底）。红章是 `renderStampImage` 用原生 canvas 预绘的 `<img>`；名称超长走 JS 截断（`truncateReceiptName`）。改小票后必须用 Playwright 实际生成 PNG 目检，DOM 里对不代表导出对。
+- **Service Worker 只在生产注册**（`_app.tsx`；dev 自动注销避免缓存干扰热更新）。测离线要 `npm run build && npm start` 后断网验证。
+- SSR 参与首屏的组件（如 QuickCompare 初始行）**禁止用随机值生成 id**，会 hydration mismatch；初始状态用确定性 id，客户端追加的才可随机。
 
 ## 协作方式（用户偏好）
 
