@@ -5,7 +5,7 @@ import PriceLockup from '@/components/PriceLockup';
 import ProductEditorForm from '@/components/ProductEditorForm';
 import SavingsCalculator from '@/components/SavingsCalculator';
 import { useLanguage } from '@/context/LanguageContext';
-import { enrichProducts, getNumberLocale, getProductDisplayMeta, groupProductsByUnitType } from '@/lib/comparison-math';
+import { enrichProducts, getProductDisplayMeta, groupProductsByUnitType } from '@/lib/comparison-math';
 import { formatUnitPrice } from '@/lib/quick-compare';
 import { X, Trophy, TrendingDown, ShoppingCart, Pencil, Sparkles, AlertTriangle, RotateCw, WifiOff } from 'lucide-react';
 import type { EnrichedProduct, ExchangeRates, Product, ProductGroup, ProductInput, UnitSystem } from '@/types';
@@ -59,7 +59,6 @@ export default function ProductList({
   const [editingProductId, setEditingProductId] = useState<string | null>(null);
   const [comparisonMode, setComparisonMode] = useState<'grouped' | 'combined'>('grouped');
   const { t, locale } = useLanguage();
-  const numberLocale = getNumberLocale(locale);
   const currencySymbol = useMemo(
     () => getCurrencies(locale).find((currency) => currency.code === baseCurrency)?.symbol ?? baseCurrency,
     [locale, baseCurrency]

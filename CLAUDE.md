@@ -36,7 +36,7 @@
 npm run dev        # 开发（默认 3000；验证时用别的端口避免撞用户会话）
 npm run test:run   # 全量测试（当前 13 文件 / 50 用例）
 npm run build      # 生产构建
-# npm run lint 不可用——ESLint 从未配置过，运行会卡在交互式初始化提示
+npm run lint       # ESLint（eslint.config.mjs, next/core-web-vitals + next/typescript；tests/** 不参与 lint）
 ```
 > 裸 `tsc --noEmit` 会在 `tests/**` 报一批 vitest 全局类型错误，是**既有环境问题**，与改动无关；只看源码目录是否干净。
 

@@ -49,6 +49,7 @@ export default function ShareImageModal({
           </div>
 
           <div className="overflow-hidden rounded-[18px] border border-[color:var(--border)] bg-[color:var(--surface-muted)] p-2">
+            {/* eslint-disable-next-line @next/next/no-img-element -- 客户端生成的 blob: URL, next/image 无法优化 */}
             <img
               src={imagePreview.url}
               alt={t('shareImagePreviewTitle')}
