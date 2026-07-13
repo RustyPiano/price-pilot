@@ -35,7 +35,12 @@ export function useModalFocusTrap(
       ? document.activeElement
       : null;
 
-    container.querySelector<HTMLElement>(FOCUSABLE_SELECTOR)?.focus();
+    // 容器本身需要能接住焦点: 内容暂时没有可交互元素时 (如导入进行中所有按钮
+    // 都 disabled), Tab 循环退回到容器上, 不让焦点漏到弹窗背后的页面。
+    if (!container.hasAttribute('tabindex')) {
+      container.tabIndex = -1;
+    }
+    (container.querySelector<HTMLElement>(FOCUSABLE_SELECTOR) ?? container).focus();
 
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
@@ -49,6 +54,8 @@ export function useModalFocusTrap(
 
       const focusables = Array.from(container.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR));
       if (focusables.length === 0) {
+        event.preventDefault();
+        container.focus();
         return;
       }
 

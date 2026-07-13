@@ -123,7 +123,7 @@ export default function ComparisonListPage() {
           <LanguageToggle />
         </PageHeader>
 
-        <main id="main-content" className="mx-auto max-w-5xl px-4 py-5 sm:py-6">
+        <main id="main-content" tabIndex={-1} className="mx-auto max-w-5xl px-4 py-5 sm:py-6">
           {status === 'loading' && (
             <div className="panel p-6 text-center text-sm text-muted">{t('listLoading')}</div>
           )}

@@ -79,4 +79,14 @@ describe('useShareImage', () => {
     expect(truncated.endsWith('…')).toBe(true);
     expect(truncated.length).toBeLessThan(24);
   });
+
+  it('never splits a surrogate pair when truncating (no mojibake)', () => {
+    // 每个 🥛 (U+1F95B) 是代理对, 按 UTF-16 code unit 切会切出孤立高代理项。
+    const name = '牛奶🥛家庭分享特惠超值装🥛🥛🥛🥛';
+    const truncated = truncateReceiptName(name);
+
+    expect(truncated.endsWith('…')).toBe(true);
+    // Array.from 按码点分割; 若切断了代理对, 结果会包含孤立的半个代理对字符。
+    expect(Array.from(truncated.slice(0, -1)).join('').length).toBe(truncated.length - 1);
+  });
 });

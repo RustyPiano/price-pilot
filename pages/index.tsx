@@ -355,7 +355,7 @@ export function HomePage() {
           <LanguageToggle />
         </PageHeader>
 
-        <main id="main-content" className="mx-auto max-w-5xl space-y-5 px-4 py-5 sm:space-y-6 sm:py-6">
+        <main id="main-content" tabIndex={-1} className="mx-auto max-w-5xl space-y-5 px-4 py-5 sm:space-y-6 sm:py-6">
           <QuickCompare />
 
           <section className="grid gap-4 lg:grid-cols-[1.25fr_0.95fr]">
