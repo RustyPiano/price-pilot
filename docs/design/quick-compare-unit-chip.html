@@ -1,0 +1,407 @@
+<title>Price Pilot · 快速对比「单位 chip」设计原型</title>
+<style>
+  :root {
+    --canvas: #f6f4ee;
+    --surface: #fdfcf9;
+    --surface-muted: #f1ede6;
+    --text-primary: #21252b;
+    --text-secondary: #6e6a5e;
+    --border: #dcd7ca;
+    --border-subtle: #e8e4d8;
+    --brand: #0e7268;
+    --brand-strong: #0b5b53;
+    --danger: #c24d3a;
+    --warning: #b45309;
+    --focus-ring: rgba(14, 114, 104, 0.22);
+    --shadow-sm: 0 10px 22px -22px rgba(33, 37, 43, 0.18);
+    --shadow-base: 0 14px 34px -28px rgba(33, 37, 43, 0.2);
+    --brand-soft: rgba(14, 114, 104, 0.08);
+    --brand-soft-border: rgba(14, 114, 104, 0.14);
+    --danger-soft: rgba(194, 77, 58, 0.08);
+    --danger-soft-border: rgba(194, 77, 58, 0.16);
+    --warning-soft: #fff7ed;
+    --warning-soft-border: rgba(180, 83, 9, 0.16);
+    --input-placeholder: #94a3b8;
+    --radius-sm: 14px;
+    --radius-md: 18px;
+    --radius-lg: 22px;
+    --font-body: 'SF Pro Text', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', -apple-system, sans-serif;
+    --font-heading: 'SF Pro Display', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', -apple-system, sans-serif;
+    --font-num: 'SF Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    color-scheme: light;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --canvas: #151310; --surface: #1e1c18; --surface-muted: #28251f;
+      --text-primary: #f3f0e9; --text-secondary: #b0aa9d;
+      --border: #3a362e; --border-subtle: rgba(58, 54, 46, 0.9);
+      --brand: #2dd4bf; --brand-strong: #7cefe0; --danger: #e0705c; --warning: #fbbf24;
+      --focus-ring: rgba(45, 212, 191, 0.28);
+      --brand-soft: rgba(45, 212, 191, 0.14); --brand-soft-border: rgba(45, 212, 191, 0.22);
+      --danger-soft: rgba(224, 112, 92, 0.14); --danger-soft-border: rgba(224, 112, 92, 0.22);
+      --warning-soft: rgba(251, 191, 36, 0.12); --warning-soft-border: rgba(251, 191, 36, 0.18);
+      --input-placeholder: #7d8796;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme='dark'] {
+    --canvas: #151310; --surface: #1e1c18; --surface-muted: #28251f;
+    --text-primary: #f3f0e9; --text-secondary: #b0aa9d;
+    --border: #3a362e; --border-subtle: rgba(58, 54, 46, 0.9);
+    --brand: #2dd4bf; --brand-strong: #7cefe0; --danger: #e0705c; --warning: #fbbf24;
+    --focus-ring: rgba(45, 212, 191, 0.28);
+    --brand-soft: rgba(45, 212, 191, 0.14); --brand-soft-border: rgba(45, 212, 191, 0.22);
+    --danger-soft: rgba(224, 112, 92, 0.14); --danger-soft-border: rgba(224, 112, 92, 0.22);
+    --warning-soft: rgba(251, 191, 36, 0.12); --warning-soft-border: rgba(251, 191, 36, 0.18);
+    --input-placeholder: #7d8796;
+    color-scheme: dark;
+  }
+  :root[data-theme='light'] {
+    --canvas: #f6f4ee; --surface: #fdfcf9; --surface-muted: #f1ede6;
+    --text-primary: #21252b; --text-secondary: #6e6a5e;
+    --border: #dcd7ca; --border-subtle: #e8e4d8;
+    --brand: #0e7268; --brand-strong: #0b5b53; --danger: #c24d3a; --warning: #b45309;
+    color-scheme: light;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--canvas); color: var(--text-primary);
+    font-family: var(--font-body); line-height: 1.55; -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 46rem; margin: 0 auto; padding: 3rem 1.25rem 5rem; }
+  h1, h2, h3 { font-family: var(--font-heading); letter-spacing: -0.02em; line-height: 1.2; text-wrap: balance; margin: 0; }
+  .eyebrow { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.16em; color: var(--brand); text-transform: uppercase; }
+  .page-title { font-size: clamp(1.5rem, 3.4vw, 2rem); margin-top: 0.5rem; }
+  .page-lede { max-width: 40rem; color: var(--text-secondary); margin: 0.9rem 0 0; font-size: 0.95rem; }
+  .page-lede strong { color: var(--text-primary); }
+
+  section { margin-top: 2.75rem; }
+  section > h2 { font-size: 1.05rem; margin-bottom: 0.4rem; }
+  section > .sub { color: var(--text-secondary); font-size: 0.875rem; margin-bottom: 1.1rem; max-width: 38rem; }
+
+  .panel {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius-lg); box-shadow: var(--shadow-base); padding: 1.4rem;
+  }
+
+  /* --- row grid, mirrors QuickCompare.tsx --- */
+  .rows { overflow: hidden; border-radius: var(--radius-md); border: 1px solid var(--border); background: var(--surface); }
+  .row { display: grid; grid-template-columns: 2.1rem 1fr 1fr; align-items: center; gap: 0.5rem; padding: 0.625rem; }
+  .row + .row { border-top: 1px solid var(--border-subtle); }
+  .row.is-best { background: var(--brand-soft); }
+
+  .rank-chip {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 2.25rem; height: 2.25rem; border-radius: 999px;
+    border: 1px solid var(--border-subtle); background: var(--surface-muted);
+    color: var(--text-primary); font-size: 0.875rem; font-weight: 700;
+  }
+  .rank-chip.is-best { border-color: var(--brand-soft-border); background: var(--brand-soft); color: var(--brand-strong); }
+
+  .field { position: relative; }
+  .field.with-border { padding-left: 0.625rem; border-left: 1px solid var(--border-subtle); }
+  .field label {
+    position: absolute; left: 0.625rem; top: 0.25rem; pointer-events: none;
+    font-size: 0.625rem; font-weight: 600; letter-spacing: 0.02em; color: var(--text-secondary);
+  }
+  .field.with-border label { left: 1.25rem; }
+  .field input {
+    width: 100%; height: 3.25rem; border: 0; background: transparent; border-radius: 10px;
+    padding: 1.15rem 0.625rem 0.25rem; font-size: 1rem; font-weight: 600;
+    font-variant-numeric: tabular-nums; color: var(--text-primary);
+  }
+  .field input::placeholder { color: var(--input-placeholder); font-weight: 400; }
+  .field input:focus { outline: none; background: var(--canvas); box-shadow: inset 0 0 0 2px var(--focus-ring); }
+
+  /* unit chip: real <select>, styled as a ghost pill sitting inside the quantity field */
+  .unit-chip {
+    position: absolute; right: 0.4rem; bottom: 0.4rem;
+    appearance: none; -webkit-appearance: none;
+    border: 1px solid var(--border-subtle); border-radius: 999px;
+    background: var(--surface-muted); color: var(--text-secondary);
+    font-size: 0.7rem; font-weight: 700; font-family: var(--font-body);
+    padding: 0.2rem 1.15rem 0.2rem 0.55rem; cursor: pointer;
+    background-image: linear-gradient(45deg, transparent 50%, var(--text-secondary) 50%), linear-gradient(135deg, var(--text-secondary) 50%, transparent 50%);
+    background-position: right 0.55rem top 0.68rem, right 0.4rem top 0.68rem;
+    background-size: 4px 4px, 4px 4px; background-repeat: no-repeat;
+  }
+  .unit-chip.is-set { border-color: var(--brand-soft-border); background-color: var(--brand-soft); color: var(--brand-strong); }
+  .unit-chip:focus-visible { outline: 3px solid var(--focus-ring); outline-offset: 2px; }
+
+  .result-line { grid-column: 1 / -1; display: flex; align-items: baseline; gap: 0.5rem; padding: 0.2rem 0.15rem 0; font-size: 0.75rem; color: var(--text-secondary); min-height: 1.4rem; }
+  .price-lockup { font-family: var(--font-num); font-variant-numeric: tabular-nums; }
+  .price-lockup .sym { font-size: 0.7em; vertical-align: super; }
+  .price-lockup .amt { font-size: 1.05em; font-weight: 700; color: var(--text-primary); }
+  .row.is-best .price-lockup .amt { color: var(--brand-strong); }
+  .price-lockup .per { font-size: 0.75em; color: var(--text-secondary); }
+  .badge-best {
+    margin-left: auto; display: inline-flex; align-items: center; gap: 0.25rem;
+    padding: 0.22rem 0.55rem; border-radius: 999px; border: 1px solid var(--brand-soft-border);
+    background: var(--brand-soft); color: var(--brand-strong); font-size: 0.72rem; font-weight: 700;
+  }
+  .badge-worse { margin-left: auto; font-weight: 700; color: var(--danger); }
+
+  .mismatch-note {
+    display: flex; gap: 0.5rem; align-items: flex-start; margin-top: 0.75rem;
+    padding: 0.7rem 0.85rem; border-radius: var(--radius-sm);
+    background: var(--warning-soft); border: 1px solid var(--warning-soft-border);
+    color: var(--text-primary); font-size: 0.8rem; line-height: 1.55;
+  }
+
+  .toolbar { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 1rem; }
+  button.demo-btn {
+    min-height: 38px; padding: 0.45rem 0.85rem; border-radius: var(--radius-md);
+    border: 1px solid var(--border); background: var(--surface); color: var(--text-primary);
+    font-size: 0.8125rem; font-weight: 600; cursor: pointer; font-family: var(--font-body);
+  }
+  button.demo-btn:hover { background: var(--surface-muted); }
+  button.demo-btn.primary { background: var(--brand); border-color: var(--brand); color: #fff; }
+  button.demo-btn.primary:hover { background: var(--brand-strong); }
+
+  .callout { border-radius: var(--radius-md); border: 1px solid var(--border-subtle); background: var(--surface-muted); padding: 1rem 1.15rem; font-size: 0.85rem; color: var(--text-secondary); line-height: 1.65; }
+  .callout b { color: var(--text-primary); }
+  .callout code { font-family: var(--font-num); background: var(--surface); border: 1px solid var(--border-subtle); border-radius: 4px; padding: 0.05rem 0.35rem; font-size: 0.85em; }
+
+  /* rejected direction, static mock */
+  .rejected { opacity: 0.72; }
+  .rejected .row { grid-template-columns: 2.1rem 1fr 1fr; grid-template-rows: auto auto; row-gap: 0.3rem; }
+  .rejected .unit-line { grid-column: 2 / -1; font-size: 0.72rem; color: var(--text-secondary); display: flex; align-items: center; gap: 0.3rem; }
+  .rejected .unit-line .fake-link { color: var(--brand); font-weight: 600; }
+  .rejected-tag {
+    display: inline-flex; align-items: center; gap: 0.35rem; font-size: 0.72rem; font-weight: 700;
+    color: var(--danger); background: var(--danger-soft); border: 1px solid var(--danger-soft-border);
+    padding: 0.2rem 0.55rem; border-radius: 999px; margin-bottom: 0.75rem;
+  }
+
+  .spec-list { display: flex; flex-direction: column; }
+  .spec-item { display: flex; gap: 0.85rem; padding: 0.85rem 0; border-bottom: 1px solid var(--border-subtle); }
+  .spec-item:last-child { border-bottom: none; }
+  .spec-item .k { flex: 0 0 6.5rem; font-size: 0.75rem; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.04em; padding-top: 0.1rem; }
+  .spec-item .v { flex: 1; font-size: 0.875rem; line-height: 1.65; }
+
+  footer { margin-top: 3.5rem; padding-top: 1.5rem; border-top: 1px solid var(--border-subtle); color: var(--text-secondary); font-size: 0.8rem; }
+</style>
+
+<div class="wrap">
+  <p class="eyebrow">Price Pilot · 设计原型 · 3.2 快速对比增强</p>
+  <h1 class="page-title">给快速对比加一个「单位 chip」，让 500g 和 1kg 能直接比</h1>
+  <p class="page-lede">
+    现在的快速对比只比「数量」，默认两行是同一单位——买两瓶同规格可乐没问题，但货架上更常见的是<strong>规格不同</strong>：小包 500g 和大包 1kg，到底哪个更划算？这个原型演示给每行加一个可选的单位选择器，默认不打扰现有的「两格三跳」输入节奏，只在需要时才用。
+  </p>
+
+  <section>
+    <h2>方向 A（推荐）：数量格里的行内 chip</h2>
+    <p class="sub">单位选择器缝在数量输入框右下角，默认显示「件」（不改变今天的行为——两个「件」的比价就是纯数量比）。点开换算真实单位后，同类目内可跨规格比价；换了一行，其余还在「件」上的行会自动跟着换，不用逐行设置。下面是真实可交互的例子，随便改数字试试：</p>
+
+    <div class="panel">
+      <div class="rows" id="rows"></div>
+      <div class="toolbar">
+        <button class="demo-btn primary" id="btn-reset">重置为大米示例</button>
+        <button class="demo-btn" id="btn-mismatch">试试选错类目会怎样</button>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>备选（已否）：数量下方单独一行</h2>
+    <p class="sub">把单位做成每行下方独立的一条「单位：件 ▾」链接，视觉上更醒目，但三行商品会多出三行高度，货架前争分夺秒地报两个数字就要多划一屏——违背「降低输入成本是第一原则」，予以否决。</p>
+    <div class="panel rejected">
+      <div class="rejected-tag">✕ 已否决</div>
+      <div class="rows">
+        <div class="row">
+          <span class="rank-chip">A</span>
+          <div class="field"><label>价格 ¥</label><input value="32.90" readonly /></div>
+          <div class="field with-border"><label>数量/规格</label><input value="5" readonly /></div>
+          <div class="unit-line">单位：<span class="fake-link">千克 ▾</span></div>
+        </div>
+        <div class="row">
+          <span class="rank-chip">B</span>
+          <div class="field"><label>价格 ¥</label><input value="4.50" readonly /></div>
+          <div class="field with-border"><label>数量/规格</label><input value="500" readonly /></div>
+          <div class="unit-line">单位：<span class="fake-link">克 ▾</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>规格摘要</h2>
+    <p class="sub">选定方向 A 后, 实现时的行为约定 (完整规格已写入 <code>plan.md</code> 3.2 节):</p>
+    <div class="panel spec-list">
+      <div class="spec-item"><div class="k">数据模型</div><div class="v"><code>QuickCompareRow</code> 新增 <code>unit: string</code>，默认 <code>'piece'</code>（等价于今天「无单位」的行为，rate=1）。</div></div>
+      <div class="spec-item"><div class="k">换算</div><div class="v">复用 <code>constants/unitSystem.ts</code> 的 <code>defaultUnitSystem</code>，按 rate 换算到类目基准单位再算单价，不依赖 IndexedDB/自定义单位。</div></div>
+      <div class="spec-item"><div class="k">自动跟随</div><div class="v">改一行的单位后，其余仍是默认 <code>'piece'</code> 的行自动跟着换成同一单位；已被手动设置过的行不覆盖（保留 500g vs 1kg 这种故意跨规格的场景）。</div></div>
+      <div class="spec-item"><div class="k">类目不匹配</div><div class="v">选到不同类目（如「克」vs「毫升」）时不报错、不阻断输入，只在结果区加一条提示，且不跨类目评「最划算」。</div></div>
+      <div class="spec-item"><div class="k">存为清单</div><div class="v">保存时把每行的真实单位写入 <code>ProductInput.unit</code>，替换掉当前硬编码的 <code>'piece'</code>。</div></div>
+    </div>
+  </section>
+
+  <footer>Price Pilot · docs/design/quick-compare-unit-chip.html · 仅供内部设计决策参考，不随生产环境部署</footer>
+</div>
+
+<script>
+  // --- 与 constants/unitSystem.ts 对齐的最小数据集 (weight/volume/piece 三类, 覆盖生鲜采购主场景) ---
+  const UNIT_SYSTEM = {
+    weight: { baseUnit: 'kg', label: '重量', units: { kg: { rate: 1, label: '千克' }, g: { rate: 0.001, label: '克' }, lb: { rate: 0.453592, label: '磅' } } },
+    volume: { baseUnit: 'l', label: '体积', units: { l: { rate: 1, label: '升' }, ml: { rate: 0.001, label: '毫升' } } },
+    piece: { baseUnit: 'piece', label: '计件', units: { piece: { rate: 1, label: '件' }, pack: { rate: 1, label: '包' }, bottle: { rate: 1, label: '瓶' }, dozen: { rate: 12, label: '打' } } },
+  };
+
+  const UNIT_LOOKUP = {};
+  for (const [category, info] of Object.entries(UNIT_SYSTEM)) {
+    for (const [code, unit] of Object.entries(info.units)) {
+      UNIT_LOOKUP[code] = { category, rate: unit.rate, label: unit.label };
+    }
+  }
+
+  function formatUnitPrice(value) {
+    if (!Number.isFinite(value) || value <= 0) return '—';
+    if (value >= 100) return value.toFixed(1);
+    if (value >= 1) return value.toFixed(2);
+    if (value >= 0.01) return value.toFixed(3);
+    return value.toFixed(4);
+  }
+
+  const RICE_DEMO = [
+    { id: 'A', price: '32.90', qty: '5', unit: 'kg' },
+    { id: 'B', price: '4.50', qty: '500', unit: 'g' },
+    { id: 'C', price: '', qty: '', unit: 'piece' },
+  ];
+
+  let rows = RICE_DEMO.map((r) => ({ ...r }));
+
+  function unitOptionsHtml(selected) {
+    return Object.entries(UNIT_SYSTEM).map(([, info]) => {
+      const opts = Object.entries(info.units).map(([code, u]) =>
+        `<option value="${code}" ${code === selected ? 'selected' : ''}>${u.label}</option>`
+      ).join('');
+      return `<optgroup label="${info.label}">${opts}</optgroup>`;
+    }).join('');
+  }
+
+  function computeResults() {
+    const parsed = rows.map((row) => {
+      const price = parseFloat(row.price);
+      const qty = parseFloat(row.qty);
+      const unitInfo = UNIT_LOOKUP[row.unit] || UNIT_LOOKUP.piece;
+      if (!Number.isFinite(price) || price <= 0 || !Number.isFinite(qty) || qty <= 0) {
+        return { valid: false };
+      }
+      const unitPrice = price / (qty * unitInfo.rate);
+      return { valid: true, unitPrice, category: unitInfo.category };
+    });
+
+    const categories = new Set(parsed.filter((p) => p.valid).map((p) => p.category));
+    const dominant = parsed.find((p) => p.valid)?.category ?? null;
+    const comparable = parsed.map((p) => p.valid && p.category === dominant);
+    const comparablePrices = parsed.filter((p, i) => p.valid && comparable[i]).map((p) => p.unitPrice);
+    const best = comparablePrices.length >= 2 ? Math.min(...comparablePrices) : null;
+
+    return {
+      parsed,
+      comparable,
+      best,
+      mismatch: categories.size > 1,
+    };
+  }
+
+  function render() {
+    const { parsed, comparable, best, mismatch } = computeResults();
+    const container = document.getElementById('rows');
+
+    container.innerHTML = rows.map((row, i) => {
+      const p = parsed[i];
+      const isBest = p.valid && comparable[i] && best !== null && Math.abs(p.unitPrice - best) < 1e-9;
+      const unitInfo = UNIT_LOOKUP[row.unit] || UNIT_LOOKUP.piece;
+      const isSetUnit = row.unit !== 'piece';
+
+      let resultHtml = '';
+      if (p.valid) {
+        const lockup = `<span class="price-lockup"><span class="sym">¥</span><span class="amt">${formatUnitPrice(p.unitPrice)}</span><span class="per"> /${unitInfo.category === 'piece' ? '件' : UNIT_SYSTEM[unitInfo.category].units[UNIT_SYSTEM[unitInfo.category].baseUnit].label}</span></span>`;
+        let badge = '';
+        if (comparable[i] && best !== null) {
+          badge = isBest
+            ? `<span class="badge-best">✓ 最划算</span>`
+            : `<span class="badge-worse">贵 ${Math.round((p.unitPrice / best - 1) * 100)}%</span>`;
+        } else if (!comparable[i] && mismatch) {
+          badge = `<span class="badge-worse" style="color: var(--warning);">类目不同</span>`;
+        }
+        resultHtml = `<div class="result-line">单价 ${lockup}${badge}</div>`;
+      } else {
+        resultHtml = `<div class="result-line"></div>`;
+      }
+
+      return `
+        <div class="row ${isBest ? 'is-best' : ''}">
+          <span class="rank-chip ${isBest ? 'is-best' : ''}">${row.id}</span>
+          <div class="field">
+            <label>价格 ¥</label>
+            <input type="text" inputmode="decimal" placeholder="0.00" value="${row.price}" data-field="price" data-idx="${i}" />
+          </div>
+          <div class="field with-border">
+            <label>数量/规格</label>
+            <input type="text" inputmode="decimal" placeholder="0" value="${row.qty}" data-field="qty" data-idx="${i}" style="padding-right: 3.4rem;" />
+            <select class="unit-chip ${isSetUnit ? 'is-set' : ''}" data-field="unit" data-idx="${i}">
+              ${unitOptionsHtml(row.unit)}
+            </select>
+          </div>
+          ${resultHtml}
+        </div>
+      `;
+    }).join('');
+
+    document.querySelectorAll('[data-field]').forEach((el) => {
+      el.addEventListener(el.tagName === 'SELECT' ? 'change' : 'input', onFieldChange);
+    });
+
+    const existingNote = document.getElementById('mismatch-note');
+    if (existingNote) existingNote.remove();
+    if (mismatch) {
+      const note = document.createElement('div');
+      note.id = 'mismatch-note';
+      note.className = 'mismatch-note';
+      note.innerHTML = '⚠️ <span>选中的商品分属不同类目（例如重量 vs 体积），无法直接比较单价——已分别显示各自结果，不参与「最划算」评选。</span>';
+      container.insertAdjacentElement('afterend', note);
+    }
+  }
+
+  function onFieldChange(event) {
+    const idx = Number(event.target.dataset.idx);
+    const field = event.target.dataset.field;
+    const value = event.target.value;
+    rows[idx][field] = value;
+
+    // 自动跟随: 改了单位且不是默认件, 把其余仍在默认件上的行也换过去 (不覆盖已手动设置的行)
+    if (field === 'unit' && value !== 'piece') {
+      rows.forEach((row, i) => {
+        if (i !== idx && row.unit === 'piece') {
+          row.unit = value;
+        }
+      });
+    }
+
+    render();
+    // 重新聚焦刚编辑的输入 (整体 innerHTML 重渲染会丢焦点)
+    requestAnimationFrame(() => {
+      const el = document.querySelector(`[data-idx="${idx}"][data-field="${field}"]`);
+      if (el && el.tagName !== 'SELECT') {
+        el.focus();
+        el.setSelectionRange(el.value.length, el.value.length);
+      }
+    });
+  }
+
+  document.getElementById('btn-reset').addEventListener('click', () => {
+    rows = RICE_DEMO.map((r) => ({ ...r }));
+    render();
+  });
+
+  document.getElementById('btn-mismatch').addEventListener('click', () => {
+    rows[2] = { id: 'C', price: '9.90', qty: '1', unit: 'l' };
+    render();
+  });
+
+  render();
+</script>
