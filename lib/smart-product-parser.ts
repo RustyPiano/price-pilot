@@ -5,6 +5,8 @@ const unitPatterns = [
   { code: 'l', patterns: ['l', '升', 'liter', 'litre'] },
   { code: 'g', patterns: ['g', '克', 'gram', 'grams'] },
   { code: 'kg', patterns: ['kg', '千克', '公斤', 'kilogram', 'kilograms'] },
+  { code: 'jin', patterns: ['斤'] },
+  { code: 'liang', patterns: ['两'] },
   { code: 'piece', patterns: ['piece', '个'] },
   { code: 'bottle', patterns: ['bottle', '瓶'] },
   { code: 'bag', patterns: ['bag', '袋'] },

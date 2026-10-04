@@ -1,3 +1,4 @@
+import { defaultUnitSystem } from '@/constants/unitSystem';
 import type {
   EnrichedProduct,
   ExchangeRates,
@@ -11,6 +12,8 @@ const compactUnitLabels: Record<Locale, Record<string, string>> = {
   zh: {
     g: '克',
     kg: '千克',
+    jin: '斤',
+    liang: '两',
     mg: '毫克',
     oz: '盎司',
     lb: '磅',
@@ -39,6 +42,8 @@ const compactUnitLabels: Record<Locale, Record<string, string>> = {
   en: {
     g: 'g',
     kg: 'kg',
+    jin: 'jin',
+    liang: 'liang',
     mg: 'mg',
     oz: 'oz',
     lb: 'lb',
@@ -79,7 +84,9 @@ function resolveUnitMeta(unit: string, unitSystem: UnitSystem): {
   baseUnit: string;
   conversionRate: number;
 } {
-  for (const [type, info] of Object.entries(unitSystem)) {
+  // 旧清单在 IndexedDB 里存的是创建时的单位表副本, 没有后来新增的单位 (如斤、两),
+  // 查不到时再查默认单位表。
+  for (const [type, info] of [...Object.entries(unitSystem), ...Object.entries(defaultUnitSystem)]) {
     const conversion = info.conversions[unit];
     if (conversion) {
       return {
@@ -101,12 +108,16 @@ export function getNumberLocale(locale: Locale | string = 'zh'): string {
   return resolveLocale(locale) === 'zh' ? 'zh-CN' : 'en-US';
 }
 
+export function getCompactUnitLabel(unit: string, locale: Locale | string = 'zh'): string {
+  return compactUnitLabels[resolveLocale(locale)][unit] ?? unit;
+}
+
 export function formatProductQuantityLabel(
   product: Pick<Product, 'quantity' | 'unit'>,
   locale: Locale | string = 'zh'
 ): string {
   const normalizedLocale = resolveLocale(locale);
-  const unitLabel = compactUnitLabels[normalizedLocale][product.unit] ?? product.unit;
+  const unitLabel = getCompactUnitLabel(product.unit, normalizedLocale);
   const quantityValue = new Intl.NumberFormat(getNumberLocale(normalizedLocale), {
     minimumFractionDigits: 0,
     maximumFractionDigits: 2,

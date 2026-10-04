@@ -51,8 +51,6 @@ export default function ShareLinkModal({ url, onClose }: ShareLinkModalProps) {
           onFocus={(event) => event.currentTarget.select()}
           className="input min-h-28 resize-none font-mono text-sm leading-6"
         />
-
-        <p className="text-xs leading-5 text-muted">{t('shareLinkFallbackHint')}</p>
       </div>
     </div>
   );

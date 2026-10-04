@@ -34,7 +34,7 @@
 
 ```bash
 npm run dev        # 开发（默认 3000；验证时用别的端口避免撞用户会话）
-npm run test:run   # 全量测试（当前 14 文件 / 56 用例）
+npm run test:run   # 全量测试（当前 14 文件 / 71 用例）
 npm run build      # 生产构建
 npm run lint       # ESLint（eslint.config.mjs, next/core-web-vitals + next/typescript；tests/** 不参与 lint）
 ```
@@ -44,8 +44,11 @@ npm run lint       # ESLint（eslint.config.mjs, next/core-web-vitals + next/typ
 
 - 改了产品代码后用 **verify skill**（`.claude/skills/verify/SKILL.md`）：起 dev server + Playwright 驱动，别只跑测试。
 - ⚠️ **分享小票（`ReceiptShareCard`）的装饰只能用真实元素/边框/位图**：html2canvas 不还原 repeating-gradient（虚线整条丢失）、CSS `text-overflow: ellipsis`（文字下多画一条实线）、flex/百分比 translate 居中、旋转元素内的文字（红章文字掉到圈底）。红章是 `renderStampImage` 用原生 canvas 预绘的 `<img>`；名称超长走 JS 截断（`truncateReceiptName`）。改小票后必须用 Playwright 实际生成 PNG 目检，DOM 里对不代表导出对。
-- **Service Worker 只在生产注册**（`_app.tsx`；dev 自动注销避免缓存干扰热更新）。测离线要 `npm run build && npm start` 后断网验证。
-- SSR 参与首屏的组件（如 QuickCompare 初始行）**禁止用随机值生成 id**，会 hydration mismatch；初始状态用确定性 id，客户端追加的才可随机。
+- **Service Worker 只在生产注册**（`_app.tsx`；dev 自动注销避免缓存干扰热更新）。页面和静态资源先返回缓存、后台更新，所以**发布新版本后第二次打开才生效**；`/api/` 不经过缓存。测离线要 `npm run build && npm start` 后断网验证。
+- SSR 参与首屏的组件（如 QuickCompare 初始行）**禁止用随机值生成 id**，会 hydration mismatch；初始状态用确定性 id，客户端追加的才可随机。读 localStorage 恢复状态同理，放在 `useEffect` 里。
+- 清单在 IndexedDB 里存的是创建时的单位表副本；新增单位要加进 `defaultUnitSystem`，`resolveUnitMeta` 会对旧清单回退查默认单位表。
+- 快速对比的 chip 用 `ChipSelect`（透明原生 select 叠在文字上）。不要直接给原生 select 加样式当 chip：它的宽度由最长选项决定，会盖住输入框。
+- 验证脚本和中间结果放在 `.scratch/`（已在 .gitignore），不要用 /tmp。
 
 ## 协作方式（用户偏好）
 

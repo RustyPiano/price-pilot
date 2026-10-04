@@ -70,7 +70,6 @@ export function HomePage() {
   const homeTitle = getHomeTitle(locale);
   const homeDescription = getHomeDescription(locale);
   const localeTag = locale === 'zh' ? 'zh_CN' : 'en_US';
-  const answerEyebrow = locale === 'zh' ? '搜索与 AI 摘要' : 'Search and AI Summary';
   const structuredData = useMemo(() => ([
     {
       '@context': 'https://schema.org',
@@ -487,10 +486,7 @@ export function HomePage() {
               <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-surface-100 text-brand">
                 <FolderOpen className="h-6 w-6" />
               </div>
-              <div className="space-y-2">
-                <h2 className="text-xl font-semibold text-foreground">{t('listsEmptyTitle')}</h2>
-                <p className="section-description">{t('listsEmptyBody')}</p>
-              </div>
+              <h2 className="text-xl font-semibold text-foreground">{t('listsEmptyTitle')}</h2>
             </div>
           ) : (
             <>
@@ -522,7 +518,6 @@ export function HomePage() {
 
           <section className="grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
             <article className="panel space-y-3 p-5 sm:p-6">
-              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted">{answerEyebrow}</p>
               <h2 className="text-2xl font-semibold leading-tight text-foreground sm:text-3xl">
                 {guideContent.answerTitle}
               </h2>
@@ -636,8 +631,6 @@ export function HomePage() {
                 {t('importStrategyDuplicate')}
               </button>
             </div>
-
-            <p className="text-xs leading-5 text-muted">{t('importStrategyHint')}</p>
           </div>
         </div>
       )}

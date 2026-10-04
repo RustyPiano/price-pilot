@@ -7,6 +7,8 @@ export const defaultUnitSystem: UnitSystem = {
     conversions: {
       kg: { rate: 1, displayName: '千克' },
       g: { rate: 0.001, displayName: '克' },
+      jin: { rate: 0.5, displayName: '斤' },
+      liang: { rate: 0.05, displayName: '两' },
       mg: { rate: 0.000001, displayName: '毫克' },
       oz: { rate: 0.0283495, displayName: '盎司' },
       lb: { rate: 0.453592, displayName: '磅' },

@@ -246,4 +246,71 @@ describe('QuickCompare', () => {
     inputs.forEach((input) => expect(input).toHaveValue(''));
     expect(screen.queryByRole('button', { name: tzh('quickCompareSaveAction') })).not.toBeInTheDocument();
   });
+
+  it('makes rows without a unit follow the first unit chosen', () => {
+    renderQuickCompare();
+
+    const unitSelects = screen.getAllByRole('combobox', { name: new RegExp(tzh('quickCompareUnitLabel')) });
+    fireEvent.change(unitSelects[0]!, { target: { value: 'kg' } });
+    expect(unitSelects[1]).toHaveValue('kg');
+
+    fireEvent.change(unitSelects[1]!, { target: { value: 'g' } });
+    fireEvent.change(unitSelects[0]!, { target: { value: 'jin' } });
+    expect(unitSelects[1]).toHaveValue('g');
+  });
+
+  it('inserts a multiplication sign into the quantity and normalises typed x', () => {
+    renderQuickCompare();
+
+    const quantityA = nthInput(1);
+    const [multiplyA] = screen.getAllByRole('button', { name: new RegExp(tzh('quickCompareMultiplyAction')) });
+    expect(multiplyA).toBeDisabled();
+
+    fireEvent.change(quantityA, { target: { value: '24' } });
+    fireEvent.click(multiplyA!);
+    expect(quantityA).toHaveValue('24×');
+
+    fireEvent.change(quantityA, { target: { value: '6x330x2' } });
+    expect(quantityA).toHaveValue('6×3302');
+  });
+
+  it('restores rows saved in localStorage', () => {
+    window.localStorage.setItem('quickCompareRows', JSON.stringify({
+      savedAt: Date.now(),
+      rows: [
+        { id: 'saved-a', price: '10', quantity: '2', unit: 'kg', promo: '' },
+        { id: 'saved-b', price: '30', quantity: '3', unit: 'kg', promo: '' },
+      ],
+    }));
+
+    renderQuickCompare();
+
+    expect(nthInput(0)).toHaveValue('10');
+    expect(nthInput(3)).toHaveValue('3');
+    expect(screen.getByText(tzh('quickCompareBestBadge'))).toBeInTheDocument();
+  });
+
+  it('saves units and promotions so the list shows the same unit price', async () => {
+    renderQuickCompare();
+
+    fireEvent.change(nthInput(0), { target: { value: '9.9' } });
+    fireEvent.change(nthInput(1), { target: { value: '500' } });
+    fireEvent.change(nthInput(2), { target: { value: '7.9' } });
+    fireEvent.change(nthInput(3), { target: { value: '500' } });
+    fireEvent.change(screen.getAllByRole('combobox', { name: new RegExp(tzh('quickCompareUnitLabel')) })[0]!, {
+      target: { value: 'g' },
+    });
+    fireEvent.change(screen.getAllByRole('combobox', { name: new RegExp(tzh('quickComparePromoLabel')) })[0]!, {
+      target: { value: 'half2' },
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: tzh('quickCompareSaveAction') }));
+    await waitFor(() => expect(push).toHaveBeenCalledTimes(1));
+
+    const savedId = (push.mock.calls[0]?.[0] as string).replace('/list/', '');
+    const savedList = await getComparisonList(savedId);
+    expect(savedList?.products[0]).toMatchObject({ price: 14.85, quantity: 1000, unit: 'g' });
+    expect(savedList?.products[0]?.name).toContain((zh.quickPromos as Record<string, string>).half2);
+    expect(savedList?.products[1]).toMatchObject({ price: 7.9, quantity: 500, unit: 'g' });
+  });
 });

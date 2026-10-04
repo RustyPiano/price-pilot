@@ -57,8 +57,6 @@ export default function ShareImageModal({
             />
           </div>
 
-          <p className="text-xs leading-5 text-muted">{t('shareImagePreviewHint')}</p>
-
           <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
             <button
               type="button"

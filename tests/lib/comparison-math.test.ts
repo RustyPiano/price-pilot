@@ -74,6 +74,25 @@ describe('comparison-math', () => {
     expect(enriched[0]?.baseUnit).toBe('bundle');
   });
 
+  it('converts units that an older list unit system does not contain', () => {
+    // 旧清单的单位表副本里没有斤。
+    const { jin: _jin, liang: _liang, ...olderWeightUnits } = defaultUnitSystem.weight!.conversions;
+    const olderUnitSystem = {
+      ...defaultUnitSystem,
+      weight: { ...defaultUnitSystem.weight!, conversions: olderWeightUnits },
+    };
+
+    const enriched = enrichProducts(
+      [{ id: 'rice', name: 'Rice', price: 3, quantity: 2, unit: 'jin', currency: 'CNY', timestamp: '2026-10-04T00:00:00.000Z' }],
+      { CNY: 1 },
+      'CNY',
+      olderUnitSystem
+    );
+
+    expect(enriched[0]?.unitType).toBe('weight');
+    expect(enriched[0]?.unitPrice).toBeCloseTo(3);
+  });
+
   it('groups by unit type and sorts by lowest unit price first', () => {
     const enriched = enrichProducts(baseProducts, { CNY: 1 }, 'CNY', defaultUnitSystem);
     const mixed = enrichProducts(

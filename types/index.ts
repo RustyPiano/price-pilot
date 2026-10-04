@@ -149,11 +149,21 @@ export interface ImagePreview {
 export interface QuickCompareRow {
   id: string;
   price: string;
+  /** 可含一个乘号, 例如 "24×500" 表示 24 件、每件 500。 */
   quantity: string;
+  /** 空字符串表示未指定单位, 按计件、rate 1 计算。 */
+  unit: string;
+  /** `QUICK_PROMOS` 的 key, 空字符串表示无促销。 */
+  promo: string;
 }
 
 export interface QuickRowResult {
+  /** 按 displayUnit × displayAmount 换算后的单价。 */
   unitPrice: number | null;
   isBest: boolean;
   pctAboveBest: number | null;
+  displayUnit: string;
+  displayAmount: number;
+  /** 与第一个有效行属于同一单位类别, 参与「最划算」评选。 */
+  comparable: boolean;
 }
