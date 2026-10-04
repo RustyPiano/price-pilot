@@ -13,7 +13,7 @@ export const AI_CRAWLER_AGENTS = [
   'Bingbot',
 ] as const;
 
-export interface SeoGuideContent {
+interface SeoGuideContent {
   answerTitle: string;
   answerBody: string;
   stepsTitle: string;
@@ -143,10 +143,6 @@ export function buildAbsoluteUrl(origin: string | null, path: string): string {
   }
 
   return new URL(path, origin).toString();
-}
-
-export function getHomePath(locale: Locale): string {
-  return locale === 'en' ? '/en' : '/';
 }
 
 export function getAlternateHomeLinks(origin: string | null) {

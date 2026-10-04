@@ -15,8 +15,6 @@ export const SUPPORTED_CURRENCY_CODES: CurrencyCode[] = [
   'SGD',
 ];
 
-const inflightRequests = new Map<string, Promise<ExchangeRates>>();
-
 export function isSupportedCurrencyCode(value: string): value is CurrencyCode {
   return SUPPORTED_CURRENCY_CODES.includes(value as CurrencyCode);
 }
@@ -40,11 +38,11 @@ export function getCurrencies(locale: Locale = 'zh'): CurrencyOption[] {
   ];
 }
 
-async function fetchExchangeRatesFromApi(
-  baseCurrency: string,
+export async function fetchExchangeRates(
+  baseCurrency: string = 'CNY',
   options: RequestInit = {}
 ): Promise<ExchangeRates> {
-  const response = await fetch(`/api/exchange-rates?base=${encodeURIComponent(baseCurrency)}`, {
+  const response = await fetch(`/api/exchange-rates?base=${encodeURIComponent(baseCurrency.toUpperCase())}`, {
     ...options,
     headers: {
       Accept: 'application/json',
@@ -64,26 +62,26 @@ async function fetchExchangeRatesFromApi(
   return data.rates;
 }
 
-export async function fetchExchangeRates(
-  baseCurrency: string = 'CNY',
-  options: RequestInit = {}
-): Promise<ExchangeRates> {
-  const normalizedCurrency = baseCurrency.toUpperCase();
+const ratesCacheKey = (baseCurrency: string) => `exchangeRates:${baseCurrency}`;
 
-  // 带 signal 的请求不共享: 复用会让一个调用方的 abort 连坐其他调用方
-  // (StrictMode 双挂载曾因此在详情页首载必报「汇率请求超时」)。
-  if (options.signal) {
-    return fetchExchangeRatesFromApi(normalizedCurrency, options);
+export function readCachedRates(baseCurrency: string): ExchangeRates | null {
+  try {
+    const raw = window.localStorage.getItem(ratesCacheKey(baseCurrency));
+    return raw ? (JSON.parse(raw) as { rates?: ExchangeRates } | null)?.rates ?? null : null;
+  } catch (error) {
+    console.error('Failed to read cached exchange rates:', error);
+    return null;
   }
+}
 
-  if (inflightRequests.has(normalizedCurrency)) {
-    return inflightRequests.get(normalizedCurrency) as Promise<ExchangeRates>;
+export function writeCachedRates(baseCurrency: string, rates: ExchangeRates): void {
+  try {
+    window.localStorage.setItem(ratesCacheKey(baseCurrency), JSON.stringify({
+      rates,
+      savedAt: new Date().toISOString(),
+    }));
+  } catch (error) {
+    // 写缓存失败 (如 iOS 隐私模式配额为 0) 不能把成功的拉取误报为错误。
+    console.error('Failed to cache exchange rates:', error);
   }
-
-  const request = fetchExchangeRatesFromApi(normalizedCurrency, options).finally(() => {
-    inflightRequests.delete(normalizedCurrency);
-  });
-
-  inflightRequests.set(normalizedCurrency, request);
-  return request;
 }

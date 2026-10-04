@@ -30,15 +30,25 @@ function openDatabase(): Promise<IDBDatabase> {
       const database = request.result;
 
       if (!database.objectStoreNames.contains(LISTS_STORE)) {
-        const store = database.createObjectStore(LISTS_STORE, { keyPath: 'id' });
-        store.createIndex('updatedAt', 'updatedAt');
-        store.createIndex('archived', 'archived');
+        database.createObjectStore(LISTS_STORE, { keyPath: 'id' });
       }
     };
 
     request.onsuccess = () => resolve(request.result);
     request.onerror = () => reject(request.error);
   });
+}
+
+async function withStore<T>(
+  mode: IDBTransactionMode,
+  run: (store: IDBObjectStore) => IDBRequest<T>
+): Promise<T> {
+  const database = await openDatabase();
+  try {
+    return await requestToPromise(run(database.transaction(LISTS_STORE, mode).objectStore(LISTS_STORE)));
+  } finally {
+    database.close();
+  }
 }
 
 export function safeParseLocalStorage<T>(key: string, fallback: T): T {
@@ -101,31 +111,11 @@ export function createComparisonList({
   category?: string;
   locale?: Locale;
 }): ComparisonList {
-  const now = new Date().toISOString();
-
-  return normalizeComparisonList(
-    {
-      id: buildEntityId('list'),
-      name,
-      category,
-      products: [],
-      baseCurrency: 'CNY',
-      unitSystem: cloneDefaultUnitSystem(),
-      recentUnits: [],
-      archived: false,
-      createdAt: now,
-      updatedAt: now,
-    },
-    locale
-  );
+  return normalizeComparisonList({ name, category }, locale);
 }
 
 export async function getAllComparisonLists(): Promise<ComparisonList[]> {
-  const database = await openDatabase();
-  const transaction = database.transaction(LISTS_STORE, 'readonly');
-  const store = transaction.objectStore(LISTS_STORE);
-  const lists = await requestToPromise(store.getAll());
-  database.close();
+  const lists = await withStore('readonly', (store) => store.getAll());
 
   return lists
     .map((list) => normalizeComparisonList(list as ComparisonListDraft))
@@ -133,11 +123,7 @@ export async function getAllComparisonLists(): Promise<ComparisonList[]> {
 }
 
 export async function getComparisonList(id: string): Promise<ComparisonList | null> {
-  const database = await openDatabase();
-  const transaction = database.transaction(LISTS_STORE, 'readonly');
-  const store = transaction.objectStore(LISTS_STORE);
-  const list = await requestToPromise(store.get(id));
-  database.close();
+  const list = await withStore('readonly', (store) => store.get(id));
 
   return list ? normalizeComparisonList(list as ComparisonListDraft) : null;
 }
@@ -146,23 +132,14 @@ export async function saveComparisonList(
   list: ComparisonListDraft,
   locale: Locale = 'zh'
 ): Promise<ComparisonList> {
-  const database = await openDatabase();
-  const transaction = database.transaction(LISTS_STORE, 'readwrite');
-  const store = transaction.objectStore(LISTS_STORE);
   const normalizedList = normalizeComparisonList(list, locale);
-
-  await requestToPromise(store.put(normalizedList));
-  database.close();
+  await withStore('readwrite', (store) => store.put(normalizedList));
 
   return normalizedList;
 }
 
 export async function removeComparisonList(id: string): Promise<void> {
-  const database = await openDatabase();
-  const transaction = database.transaction(LISTS_STORE, 'readwrite');
-  const store = transaction.objectStore(LISTS_STORE);
-  await requestToPromise(store.delete(id));
-  database.close();
+  await withStore('readwrite', (store) => store.delete(id));
 }
 
 export async function ensureComparisonListsInitialized(

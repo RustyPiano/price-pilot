@@ -21,19 +21,6 @@ describe('fetchExchangeRates', () => {
     vi.unstubAllGlobals();
   });
 
-  it('dedupes concurrent requests without a signal', async () => {
-    const fetchMock = mockFetch();
-
-    const [first, second] = await Promise.all([
-      fetchExchangeRates('CNY'),
-      fetchExchangeRates('cny'),
-    ]);
-
-    expect(fetchMock).toHaveBeenCalledTimes(1);
-    expect(first).toEqual(RATES_PAYLOAD.rates);
-    expect(second).toEqual(RATES_PAYLOAD.rates);
-  });
-
   it('does not share in-flight requests across abortable callers', async () => {
     // 回归防护: 曾经所有带 signal 的调用共用一个去重键, abort 其一会连坐其余
     // (StrictMode 双挂载下详情页首载必报「汇率请求超时」)。

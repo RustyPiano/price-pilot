@@ -1,9 +1,9 @@
 import type { CSSProperties } from 'react';
 
-export type PriceLockupTone = 'default' | 'best';
-export type PriceLockupSize = 'sm' | 'md' | 'lg';
+type PriceLockupTone = 'default' | 'best';
+type PriceLockupSize = 'sm' | 'md' | 'lg';
 
-export interface PriceLockupProps {
+interface PriceLockupProps {
   /** 已格式化的金额字符串 (调用方负责精度), 例如 "0.040"。 */
   amount: string;
   /** 货币符号, 例如 "¥" / "$"。 */

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { fetchExchangeRates, getCurrencies } from '@/constants/currencies';
+import { fetchExchangeRates, getCurrencies, readCachedRates, writeCachedRates } from '@/constants/currencies';
 import PriceComparisonBars from '@/components/PriceComparisonBars';
 import PriceLockup from '@/components/PriceLockup';
 import ProductEditorForm from '@/components/ProductEditorForm';
@@ -77,7 +77,6 @@ export default function ProductList({
     const timeoutId = window.setTimeout(() => {
       controller.abort();
     }, 10000);
-    const cacheKey = `exchangeRates:${baseCurrency}`;
 
     const getLatestRates = async () => {
       setIsLoading(true);
@@ -87,28 +86,9 @@ export default function ProductList({
       try {
         const rates = await fetchExchangeRates(baseCurrency, { signal: controller.signal });
         setExchangeRates(rates);
-        try {
-          window.localStorage.setItem(cacheKey, JSON.stringify({
-            rates,
-            savedAt: new Date().toISOString(),
-          }));
-        } catch (cacheError) {
-          // 写缓存失败 (如 iOS 隐私模式配额为 0) 不能把成功的拉取误报为错误。
-          console.error('Failed to cache exchange rates:', cacheError);
-        }
+        writeCachedRates(baseCurrency, rates);
       } catch (error) {
-        const cachedRates = (() => {
-          try {
-            const cachedValue = window.localStorage.getItem(cacheKey);
-            if (!cachedValue) return null;
-
-            const parsedValue = JSON.parse(cachedValue);
-            return parsedValue?.rates || null;
-          } catch (cacheError) {
-            console.error('Failed to read cached exchange rates:', cacheError);
-            return null;
-          }
-        })();
+        const cachedRates = readCachedRates(baseCurrency);
 
         if (cachedRates) {
           setExchangeRates(cachedRates);

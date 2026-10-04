@@ -3,7 +3,6 @@ export default {
   content: [
     './pages/**/*.{js,ts,jsx,tsx,mdx}',
     './components/**/*.{js,ts,jsx,tsx,mdx}',
-    './app/**/*.{js,ts,jsx,tsx,mdx}',
   ],
   theme: {
     extend: {
@@ -23,20 +22,8 @@ export default {
         warning: 'var(--warning)',
         danger: 'var(--danger)',
       },
-      boxShadow: {
-        'theme-base': 'var(--shadow-base)',
-        'theme-sm': 'var(--shadow-sm)',
-        'theme-lg': 'var(--shadow-lg)',
-      },
-      borderWidth: {
-        theme: '1px',
-      },
       borderColor: {
-        theme: 'var(--border)',
         DEFAULT: 'var(--border)',
-      },
-      borderRadius: {
-        theme: 'var(--radius-md)',
       },
       animation: {
         'fade-in': 'fadeIn 0.2s ease-out',

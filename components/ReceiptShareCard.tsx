@@ -21,7 +21,7 @@ const TOOTH = 12;
 const TEAR_HEIGHT = 10;
 
 /** 红圈章尺寸 (px), 供 useShareImage 预绘 stamp 位图使用。 */
-export const STAMP_SIZE = 52;
+const STAMP_SIZE = 52;
 
 export interface ReceiptShareItem {
   /** 商品名 (已本地化的原始数据)。 */
@@ -38,7 +38,7 @@ export interface ReceiptShareItem {
   pct: number | null;
 }
 
-export interface ReceiptShareCardProps {
+interface ReceiptShareCardProps {
   listName: string;
   /** 小票流水号日期段, 例如 "20260707"。 */
   serial: string;

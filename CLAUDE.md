@@ -34,7 +34,7 @@
 
 ```bash
 npm run dev        # 开发（默认 3000；验证时用别的端口避免撞用户会话）
-npm run test:run   # 全量测试（当前 13 文件 / 50 用例）
+npm run test:run   # 全量测试（当前 14 文件 / 56 用例）
 npm run build      # 生产构建
 npm run lint       # ESLint（eslint.config.mjs, next/core-web-vitals + next/typescript；tests/** 不参与 lint）
 ```

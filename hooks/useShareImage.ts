@@ -5,7 +5,7 @@ import ReceiptShareCard, {
   renderStampImage,
   type ReceiptShareItem,
 } from '@/components/ReceiptShareCard';
-import { fetchExchangeRates, getCurrencies } from '@/constants/currencies';
+import { fetchExchangeRates, getCurrencies, readCachedRates } from '@/constants/currencies';
 import {
   enrichProducts,
   formatProductQuantityLabel,
@@ -31,21 +31,6 @@ interface ReceiptModel {
   items: ReceiptShareItem[];
   winnerName: string | null;
   savingsPct: string | null;
-}
-
-function readCachedRates(baseCurrency: string): ExchangeRates | null {
-  try {
-    const raw = window.localStorage.getItem(`exchangeRates:${baseCurrency}`);
-    if (!raw) {
-      return null;
-    }
-
-    const parsed = JSON.parse(raw) as { rates?: ExchangeRates } | null;
-    return parsed?.rates ?? null;
-  } catch (error) {
-    console.error('Failed to read cached exchange rates for share image:', error);
-    return null;
-  }
 }
 
 // 复用详情页已缓存的汇率, 保证小票数字与用户所见一致; 缺失时兜底请求一次。
